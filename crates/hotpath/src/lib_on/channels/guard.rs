@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use prettytable::{Cell, Row, Table};
 
-use crate::channels::{get_sorted_channel_stats, resolve_label};
+use crate::channels::{get_sorted_channel_entries, resolve_label};
 use crate::json::{JsonChannelEntry, JsonChannelsList};
 use crate::output::format_bytes;
 use crate::Format;
@@ -125,7 +125,7 @@ impl Default for ChannelsGuard {
 impl Drop for ChannelsGuard {
     fn drop(&mut self) {
         let elapsed = self.start_time.elapsed();
-        let channels = get_sorted_channel_stats();
+        let channels = get_sorted_channel_entries();
 
         if channels.is_empty() {
             println!("\nNo instrumented channels found.");

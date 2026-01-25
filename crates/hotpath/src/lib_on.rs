@@ -117,9 +117,9 @@ macro_rules! dbg {
 
 /// Value tracking macro that logs key-value pairs to the profiler.
 ///
-/// Unlike `dbg!`, this macro takes a string key and value. Values are
-/// grouped by key (not source location), but each log entry records
-/// its source location for debugging.
+/// Unlike `dbg!`, this macro takes a string key and returns a handle
+/// with a `.set()` method. Values are grouped by key (not source location),
+/// but each log entry records its source location for debugging.
 ///
 /// # Examples
 ///
@@ -127,16 +127,20 @@ macro_rules! dbg {
 /// use hotpath::val;
 ///
 /// // Track a counter value
-/// hotpath::val!("counter", count);
+/// hotpath::val!("counter").set(&count);
 ///
 /// // Track state changes
-/// hotpath::val!("state", current_state);
+/// hotpath::val!("state").set(&current_state);
+///
+/// // Dynamic keys work too
+/// let key = format!("counter_{}", id);
+/// hotpath::val!(key).set(&value);
 /// ```
 #[macro_export]
 macro_rules! val {
-    ($key:expr, $val:expr $(,)?) => {{
+    ($key:expr) => {{
         const VAL_LOC: &'static str = concat!(file!(), ":", line!());
-        $crate::debug::value::log_val($key, VAL_LOC, &$val);
+        $crate::debug::val::ValHandle::new($key, VAL_LOC)
     }};
 }
 

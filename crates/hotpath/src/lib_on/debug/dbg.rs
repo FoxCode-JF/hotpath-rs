@@ -10,8 +10,8 @@ use std::time::Instant;
 
 use crate::channels::{extract_filename, START_TIME};
 use crate::debug::{
-    get_sorted_debug_stats, get_sorted_value_stats, init_debug_state, send_debug_event, DbgEntry,
-    DebugEvent,
+    get_sorted_debug_dbg_entries, get_sorted_debug_val_entries, init_debug_state, send_debug_event,
+    DbgEntry, DebugEvent,
 };
 use crate::json::{format_time_ago, JsonDebugDbgLogs, JsonDebugEntry, JsonDebugList, JsonDebugLog};
 use crate::output::{format_duration, truncate_result};
@@ -39,8 +39,8 @@ pub fn log_dbg<T: Debug>(source: &'static str, expression: &'static str, value: 
 }
 
 pub fn get_debug_entries_json() -> JsonDebugList {
-    let dbg_stats = get_sorted_debug_stats();
-    let val_stats = get_sorted_value_stats();
+    let dbg_stats = get_sorted_debug_dbg_entries();
+    let val_stats = get_sorted_debug_val_entries();
 
     let mut formatted: Vec<JsonDebugEntry> = dbg_stats.iter().map(JsonDebugEntry::from).collect();
     formatted.extend(val_stats.iter().map(JsonDebugEntry::from));
@@ -70,7 +70,7 @@ pub fn get_dbg_logs(id: u64) -> Option<JsonDebugDbgLogs> {
         .map(|t| t.elapsed().as_nanos() as u64)
         .unwrap_or(0);
 
-    crate::debug::get_debug_stats_by_id(id)
+    crate::debug::get_debug_dbg_entries_by_id(id)
         .map(|s| JsonDebugDbgLogs::from_stats(&s, current_elapsed_ns))
 }
 

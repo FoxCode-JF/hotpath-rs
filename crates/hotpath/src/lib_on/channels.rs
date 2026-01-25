@@ -30,7 +30,7 @@ pub(crate) fn timestamp_nanos(timestamp: Instant) -> u64 {
 
 /// Statistics for a single instrumented channel.
 #[derive(Debug, Clone)]
-pub(crate) struct ChannelStats {
+pub(crate) struct ChannelEntry {
     pub(crate) id: u64,
     pub(crate) source: &'static str,
     pub(crate) label: Option<String>,
@@ -45,7 +45,7 @@ pub(crate) struct ChannelStats {
     pub(crate) iter: u32,
 }
 
-impl ChannelStats {
+impl ChannelEntry {
     pub fn queued(&self) -> u64 {
         self.sent_count
             .saturating_sub(self.received_count)
@@ -57,8 +57,8 @@ impl ChannelStats {
     }
 }
 
-impl From<&ChannelStats> for JsonChannelEntry {
-    fn from(stats: &ChannelStats) -> Self {
+impl From<&ChannelEntry> for JsonChannelEntry {
+    fn from(stats: &ChannelEntry) -> Self {
         let label = resolve_label(stats.source, stats.label.as_deref(), Some(stats.iter));
         let queued = stats.queued();
         let capacity = match &stats.channel_type {
@@ -85,7 +85,7 @@ impl From<&ChannelStats> for JsonChannelEntry {
     }
 }
 
-impl ChannelStats {
+impl ChannelEntry {
     fn new(
         id: u64,
         source: &'static str,
@@ -162,7 +162,7 @@ pub(crate) enum ChannelEvent {
 
 type ChannelStatsState = (
     CbSender<ChannelEvent>,
-    Arc<RwLock<HashMap<u64, ChannelStats>>>,
+    Arc<RwLock<HashMap<u64, ChannelEntry>>>,
 );
 
 static CHANNELS_STATE: OnceLock<ChannelStatsState> = OnceLock::new();
@@ -184,7 +184,7 @@ pub(crate) fn init_channels_state() -> &'static ChannelStatsState {
         START_TIME.get_or_init(Instant::now);
 
         let (tx, rx) = unbounded::<ChannelEvent>();
-        let stats_map = Arc::new(RwLock::new(HashMap::<u64, ChannelStats>::new()));
+        let stats_map = Arc::new(RwLock::new(HashMap::<u64, ChannelEntry>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
         std::thread::Builder::new()
@@ -206,7 +206,7 @@ pub(crate) fn init_channels_state() -> &'static ChannelStatsState {
 
                             stats.insert(
                                 id,
-                                ChannelStats::new(
+                                ChannelEntry::new(
                                     id,
                                     source,
                                     display_label,
@@ -511,7 +511,7 @@ macro_rules! channel {
     }};
 }
 
-fn get_all_channel_stats() -> HashMap<u64, ChannelStats> {
+fn get_all_channel_stats() -> HashMap<u64, ChannelEntry> {
     if let Some((_, stats_map)) = CHANNELS_STATE.get() {
         stats_map.read().unwrap().clone()
     } else {
@@ -521,7 +521,7 @@ fn get_all_channel_stats() -> HashMap<u64, ChannelStats> {
 
 /// Compare two channel stats for sorting.
 /// Custom labels come first (sorted alphabetically), then auto-generated labels (sorted by source and iter).
-fn compare_channel_stats(a: &ChannelStats, b: &ChannelStats) -> std::cmp::Ordering {
+fn compare_channel_entries(a: &ChannelEntry, b: &ChannelEntry) -> std::cmp::Ordering {
     let a_has_label = a.label.is_some();
     let b_has_label = b.label.is_some();
 
@@ -538,14 +538,14 @@ fn compare_channel_stats(a: &ChannelStats, b: &ChannelStats) -> std::cmp::Orderi
     }
 }
 
-pub(crate) fn get_sorted_channel_stats() -> Vec<ChannelStats> {
-    let mut stats: Vec<ChannelStats> = get_all_channel_stats().into_values().collect();
-    stats.sort_by(compare_channel_stats);
+pub(crate) fn get_sorted_channel_entries() -> Vec<ChannelEntry> {
+    let mut stats: Vec<ChannelEntry> = get_all_channel_stats().into_values().collect();
+    stats.sort_by(compare_channel_entries);
     stats
 }
 
 pub fn get_channels_json() -> JsonChannelsList {
-    let channels = get_sorted_channel_stats()
+    let channels = get_sorted_channel_entries()
         .iter()
         .map(JsonChannelEntry::from)
         .collect();

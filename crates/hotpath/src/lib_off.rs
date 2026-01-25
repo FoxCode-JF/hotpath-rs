@@ -19,7 +19,16 @@ macro_rules! dbg {
 
 #[macro_export]
 macro_rules! val {
-    ($key:expr, $val:expr $(,)?) => {{}};
+    ($key:expr) => {{
+        $crate::ValHandle
+    }};
+}
+
+pub struct ValHandle;
+
+impl ValHandle {
+    #[inline]
+    pub fn set<T: std::fmt::Debug>(&self, _value: &T) {}
 }
 
 #[macro_export]

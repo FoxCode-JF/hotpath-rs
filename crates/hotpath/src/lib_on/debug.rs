@@ -17,10 +17,10 @@ use std::time::Instant;
 
 pub mod dbg;
 pub mod gauge;
-pub mod value;
+pub mod val;
 
 pub use dbg::{get_dbg_logs, get_debug_entries_json, log_dbg};
-pub use value::{get_val_logs, log_val};
+pub use val::{get_val_logs, ValHandle};
 
 #[derive(Debug, Clone)]
 pub struct DbgEntry {
@@ -54,7 +54,7 @@ impl DbgEntry {
 #[derive(Debug, Clone)]
 pub struct ValEntry {
     pub id: u64,
-    pub key: &'static str,
+    pub key: String,
     pub log_count: u64,
     pub logs: VecDeque<ValLog>,
 }
@@ -69,7 +69,7 @@ pub struct ValLog {
 }
 
 impl ValEntry {
-    fn new(id: u64, key: &'static str) -> Self {
+    fn new(id: u64, key: String) -> Self {
         Self {
             id,
             key,
@@ -89,7 +89,7 @@ pub(crate) enum DebugEvent {
         tid: Option<u64>,
     },
     Val {
-        key: &'static str,
+        key: String,
         source: &'static str,
         value: String,
         timestamp: Instant,
@@ -100,7 +100,7 @@ pub(crate) enum DebugEvent {
 type DebugState = (
     CbSender<DebugEvent>,
     Arc<RwLock<HashMap<(&'static str, &'static str), DbgEntry>>>,
-    Arc<RwLock<HashMap<&'static str, ValEntry>>>,
+    Arc<RwLock<HashMap<String, ValEntry>>>,
 );
 
 static DEBUG_STATE: OnceLock<DebugState> = OnceLock::new();
@@ -115,7 +115,7 @@ pub(crate) fn init_debug_state() {
         let dbg_stats_map = Arc::new(RwLock::new(
             HashMap::<(&'static str, &'static str), DbgEntry>::new(),
         ));
-        let val_stats_map = Arc::new(RwLock::new(HashMap::<&'static str, ValEntry>::new()));
+        let val_stats_map = Arc::new(RwLock::new(HashMap::<String, ValEntry>::new()));
         let dbg_stats_clone = Arc::clone(&dbg_stats_map);
         let val_stats_clone = Arc::clone(&val_stats_map);
 
@@ -183,7 +183,7 @@ fn process_dbg_event(
     stats.logs.push_back(entry);
 }
 
-fn process_val_event(stats_map: &mut HashMap<&'static str, ValEntry>, event: DebugEvent) {
+fn process_val_event(stats_map: &mut HashMap<String, ValEntry>, event: DebugEvent) {
     let DebugEvent::Val {
         key,
         source,
@@ -195,7 +195,7 @@ fn process_val_event(stats_map: &mut HashMap<&'static str, ValEntry>, event: Deb
         return;
     };
 
-    let stats = stats_map.entry(key).or_insert_with(|| {
+    let stats = stats_map.entry(key.clone()).or_insert_with(|| {
         let id = DEBUG_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         ValEntry::new(id, key)
     });
@@ -223,7 +223,13 @@ pub(crate) fn send_debug_event(event: DebugEvent) {
     }
 }
 
-pub(crate) fn get_all_debug_stats() -> HashMap<(&'static str, &'static str), DbgEntry> {
+pub(crate) fn get_sorted_debug_dbg_entries() -> Vec<DbgEntry> {
+    let mut stats: Vec<DbgEntry> = get_all_debug_dbg_entries().into_values().collect();
+    stats.sort_by(|a, b| a.source.cmp(b.source).then(a.expression.cmp(b.expression)));
+    stats
+}
+
+fn get_all_debug_dbg_entries() -> HashMap<(&'static str, &'static str), DbgEntry> {
     if let Some((_, dbg_map, _)) = DEBUG_STATE.get() {
         dbg_map.read().unwrap().clone()
     } else {
@@ -231,13 +237,13 @@ pub(crate) fn get_all_debug_stats() -> HashMap<(&'static str, &'static str), Dbg
     }
 }
 
-pub(crate) fn get_sorted_debug_stats() -> Vec<DbgEntry> {
-    let mut stats: Vec<DbgEntry> = get_all_debug_stats().into_values().collect();
-    stats.sort_by(|a, b| a.source.cmp(b.source).then(a.expression.cmp(b.expression)));
+pub(crate) fn get_sorted_debug_val_entries() -> Vec<ValEntry> {
+    let mut stats: Vec<ValEntry> = get_all_debug_val_entries().into_values().collect();
+    stats.sort_by(|a, b| a.key.cmp(&b.key));
     stats
 }
 
-pub(crate) fn get_all_value_stats() -> HashMap<&'static str, ValEntry> {
+fn get_all_debug_val_entries() -> HashMap<String, ValEntry> {
     if let Some((_, _, val_map)) = DEBUG_STATE.get() {
         val_map.read().unwrap().clone()
     } else {
@@ -245,20 +251,14 @@ pub(crate) fn get_all_value_stats() -> HashMap<&'static str, ValEntry> {
     }
 }
 
-pub(crate) fn get_sorted_value_stats() -> Vec<ValEntry> {
-    let mut stats: Vec<ValEntry> = get_all_value_stats().into_values().collect();
-    stats.sort_by(|a, b| a.key.cmp(b.key));
-    stats
-}
-
-pub(crate) fn get_debug_stats_by_id(id: u64) -> Option<DbgEntry> {
-    get_all_debug_stats()
+pub(crate) fn get_debug_dbg_entries_by_id(id: u64) -> Option<DbgEntry> {
+    get_all_debug_dbg_entries()
         .into_values()
         .find(|stats| stats.id == id)
 }
 
-pub(crate) fn get_value_stats_by_id(id: u64) -> Option<ValEntry> {
-    get_all_value_stats()
+pub(crate) fn get_debug_val_entries_by_id(id: u64) -> Option<ValEntry> {
+    get_all_debug_val_entries()
         .into_values()
         .find(|stats| stats.id == id)
 }

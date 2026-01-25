@@ -159,8 +159,8 @@ pub mod tests {
             "Expected 'counter' in expressions"
         );
         assert!(
-            expressions.contains(&"status"),
-            "Expected 'status' in expressions"
+            expressions.contains(&"status_1"),
+            "Expected 'status_1' in expressions"
         );
 
         let counter_entry = debug_response

@@ -2,7 +2,7 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::channels::{get_sorted_channel_stats, ChannelStats, START_TIME};
+use crate::channels::{get_sorted_channel_entries, ChannelEntry, START_TIME};
 use crate::futures::{get_sorted_future_stats, FutureEntry};
 use crate::json::{
     DataFlowType, JsonChannelEntry, JsonDataFlowEntry, JsonDataFlowList, JsonFutureEntry,
@@ -16,8 +16,8 @@ pub fn next_data_flow_id() -> u64 {
     DATA_FLOW_ID_COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
-impl From<&ChannelStats> for JsonDataFlowEntry {
-    fn from(stats: &ChannelStats) -> Self {
+impl From<&ChannelEntry> for JsonDataFlowEntry {
+    fn from(stats: &ChannelEntry) -> Self {
         let entry: JsonChannelEntry = stats.into();
         JsonDataFlowEntry {
             id: entry.id,
@@ -79,7 +79,7 @@ impl From<&FutureEntry> for JsonDataFlowEntry {
 pub fn get_data_flow_json() -> JsonDataFlowList {
     let mut entries: Vec<JsonDataFlowEntry> = Vec::new();
 
-    for stats in get_sorted_channel_stats() {
+    for stats in get_sorted_channel_entries() {
         entries.push(JsonDataFlowEntry::from(&stats));
     }
 

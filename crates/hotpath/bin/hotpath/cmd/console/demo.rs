@@ -23,7 +23,7 @@ fn spawn_bounded_channel() {
             if counter.is_multiple_of(10) {
                 hotpath::dbg!(counter);
             }
-            hotpath::val!("bounded_counter", counter);
+            hotpath::val!("bounded_counter").set(&counter);
             counter += 1;
             thread::sleep(Duration::from_millis(100));
         }
@@ -57,7 +57,7 @@ fn spawn_unbounded_channel() {
             if value % 20 == 0 {
                 hotpath::dbg!(value, "received");
             }
-            hotpath::val!("unbounded_received", value);
+            hotpath::val!("unbounded_received").set(&value);
             thread::sleep(Duration::from_millis(80));
         }
     });
@@ -99,7 +99,7 @@ async fn spawn_streams() {
     tokio::spawn(async move {
         let mut stream = Box::pin(stream1);
         while let Some(value) = stream.next().await {
-            hotpath::val!("stream_number", value);
+            hotpath::val!("stream_number").set(&value);
             std::hint::black_box(value);
         }
     });
@@ -170,7 +170,7 @@ async fn spawn_futures_demo() {
                 log = true
             )
             .await;
-            hotpath::val!("future_sum", result);
+            hotpath::val!("future_sum").set(&result);
             std::hint::black_box(result);
             sleep_ms(100).await;
         }

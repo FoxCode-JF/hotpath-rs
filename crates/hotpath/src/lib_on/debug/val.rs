@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use crate::channels::{extract_filename, START_TIME};
 use crate::debug::{
-    get_sorted_value_stats, init_debug_state, send_debug_event, DebugEvent, ValEntry,
+    get_sorted_debug_val_entries, init_debug_state, send_debug_event, DebugEvent, ValEntry,
 };
 use crate::json::{format_time_ago, JsonDebugEntry, JsonDebugList, JsonDebugLog, JsonDebugValLogs};
 use crate::output::{format_duration, truncate_result};
@@ -19,26 +19,39 @@ fn get_thread_id() -> Option<u64> {
     Some(crate::tid::current_tid())
 }
 
-#[doc(hidden)]
-#[inline]
-pub fn log_val<T: Debug>(key: &'static str, source: &'static str, value: &T) {
-    init_debug_state();
+pub struct ValHandle {
+    key: String,
+    source: &'static str,
+}
 
-    let value_str = truncate_result(format!("{:?}", value));
-    let timestamp = Instant::now();
-    let tid = get_thread_id();
+impl ValHandle {
+    #[inline]
+    pub fn new(key: impl Into<String>, source: &'static str) -> Self {
+        init_debug_state();
+        Self {
+            key: key.into(),
+            source,
+        }
+    }
 
-    send_debug_event(DebugEvent::Val {
-        key,
-        source,
-        value: value_str,
-        timestamp,
-        tid,
-    });
+    #[inline]
+    pub fn set<T: Debug>(&self, value: &T) {
+        let value_str = truncate_result(format!("{:?}", value));
+        let timestamp = Instant::now();
+        let tid = get_thread_id();
+
+        send_debug_event(DebugEvent::Val {
+            key: self.key.clone(),
+            source: self.source,
+            value: value_str,
+            timestamp,
+            tid,
+        });
+    }
 }
 
 pub fn get_val_stats_json() -> JsonDebugList {
-    let stats = get_sorted_value_stats();
+    let stats = get_sorted_debug_val_entries();
     let formatted: Vec<JsonDebugEntry> = stats.iter().map(JsonDebugEntry::from).collect();
 
     let current_elapsed_ns = START_TIME
@@ -58,7 +71,7 @@ pub fn get_val_logs(id: u64) -> Option<JsonDebugValLogs> {
         .map(|t| t.elapsed().as_nanos() as u64)
         .unwrap_or(0);
 
-    crate::debug::get_value_stats_by_id(id)
+    crate::debug::get_debug_val_entries_by_id(id)
         .map(|s| JsonDebugValLogs::from_stats(&s, current_elapsed_ns))
 }
 
@@ -75,13 +88,17 @@ fn truncate_source_path(source: &str) -> String {
 impl From<&ValEntry> for JsonDebugEntry {
     fn from(stats: &ValEntry) -> Self {
         let last_value = stats.logs.back().map(|e| e.value.clone());
-        let last_source = stats.logs.back().map(|e| e.source).unwrap_or(stats.key);
+        let (source, source_display) = stats
+            .logs
+            .back()
+            .map(|e| (e.source.to_string(), truncate_source_path(e.source)))
+            .unwrap_or_else(|| ("<unknown>".to_string(), "<unknown>".to_string()));
         JsonDebugEntry {
             id: stats.id,
             entry_type: crate::json::DebugEntryType::Val,
-            source: last_source.to_string(),
-            source_display: truncate_source_path(last_source),
-            expression: stats.key.to_string(),
+            source,
+            source_display,
+            expression: stats.key.clone(),
             log_count: stats.log_count,
             last_value,
         }
@@ -91,7 +108,7 @@ impl From<&ValEntry> for JsonDebugEntry {
 impl JsonDebugValLogs {
     pub fn from_stats(stats: &ValEntry, current_elapsed_ns: u64) -> Self {
         JsonDebugValLogs {
-            key: stats.key.to_string(),
+            key: stats.key.clone(),
             total_logs: stats.log_count,
             logs: stats
                 .logs
