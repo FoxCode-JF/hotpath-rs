@@ -66,8 +66,6 @@ fn start_metrics_server(port: u16) {
                     }
                 };
 
-                eprintln!("[hotpath] Metrics server listening on http://{}", addr);
-
                 for request in server.incoming_requests() {
                     handle_request(request);
                 }
