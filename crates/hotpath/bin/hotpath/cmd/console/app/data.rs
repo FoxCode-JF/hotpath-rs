@@ -1,19 +1,18 @@
 //! Data management - fetching, updating, and transforming functions/channels
 
-use crate::cmd::console::app::{App, CachedDebugLogs, CachedLogs, CachedStreamLogs, SelectedTab};
+use crate::cmd::console::app::{App, SelectedTab};
 use crate::cmd::console::events::{DataRequest, DataResponse};
 use hotpath::json::{
-    FormattedChannelLogs, FormattedChannelsJson, FormattedDbgJson, FormattedDbgLogs,
-    FormattedFunctionAllocLogsJson, FormattedFunctionData, FormattedFunctionTimingLogsJson,
-    FormattedFunctionsJson, FormattedFutureCalls, FormattedFuturesJson, FormattedStreamLogs,
-    FormattedStreamsJson, FormattedThreadsJson,
+    DebugEntryType, JsonChannelLogsList, JsonChannelsList, JsonDebugList,
+    JsonFunctionAllocLogsList, JsonFunctionEntry, JsonFunctionTimingLogsList, JsonFunctionsList,
+    JsonFutureLogsList, JsonFuturesList, JsonStreamLogsList, JsonStreamsList, JsonThreadsList,
 };
 use std::time::Instant;
 use tracing::{trace, warn};
 
 #[hotpath::measure_all]
 impl App {
-    pub(crate) fn update_timing_metrics(&mut self, metrics: FormattedFunctionsJson) {
+    pub(crate) fn update_timing_metrics(&mut self, metrics: JsonFunctionsList) {
         // Capture the currently selected function name (not index!)
         let selected_function_name = self.selected_function_name();
 
@@ -44,7 +43,7 @@ impl App {
         }
     }
 
-    pub(crate) fn update_memory_metrics(&mut self, metrics: FormattedFunctionsJson) {
+    pub(crate) fn update_memory_metrics(&mut self, metrics: JsonFunctionsList) {
         // Capture the currently selected function name (not index!)
         let selected_function_name = self.selected_function_name();
 
@@ -79,7 +78,7 @@ impl App {
         self.error_message = Some(error);
     }
 
-    pub(crate) fn update_channels(&mut self, channels: FormattedChannelsJson) {
+    pub(crate) fn update_channels(&mut self, channels: JsonChannelsList) {
         // Capture the currently selected channel ID (not index!)
         let selected_channel_id = self
             .channels_table_state
@@ -135,12 +134,12 @@ impl App {
         }
     }
 
-    pub(crate) fn handle_channel_logs(&mut self, _channel_id: u64, logs: FormattedChannelLogs) {
-        self.logs = Some(CachedLogs { logs });
+    pub(crate) fn handle_channel_logs(&mut self, _channel_id: u64, logs: JsonChannelLogsList) {
+        self.logs = Some(logs);
 
         // Ensure logs table selection is valid
         if let Some(ref cached_logs) = self.logs {
-            let log_count = cached_logs.logs.sent_logs.len();
+            let log_count = cached_logs.sent_logs.len();
             if let Some(selected) = self.channel_logs_table_state.selected() {
                 if selected >= log_count && log_count > 0 {
                     self.channel_logs_table_state.select(Some(log_count - 1));
@@ -150,12 +149,12 @@ impl App {
     }
 
     #[hotpath::measure(log = true)]
-    pub(crate) fn get_timing_measurements(&self) -> &[FormattedFunctionData] {
+    pub(crate) fn get_timing_measurements(&self) -> &[JsonFunctionEntry] {
         &self.timing_functions.data
     }
 
     #[hotpath::measure(log = true)]
-    pub(crate) fn get_memory_measurements(&self) -> &[FormattedFunctionData] {
+    pub(crate) fn get_memory_measurements(&self) -> &[JsonFunctionEntry] {
         &self.memory_functions.data
     }
 
@@ -171,11 +170,11 @@ impl App {
             .and_then(|idx| entries.get(idx).map(|f| f.name.clone()))
     }
 
-    pub(crate) fn update_timing_logs(&mut self, logs: FormattedFunctionTimingLogsJson) {
+    pub(crate) fn update_timing_logs(&mut self, logs: JsonFunctionTimingLogsList) {
         self.current_timing_logs = Some(logs);
     }
 
-    pub(crate) fn update_alloc_logs(&mut self, logs: FormattedFunctionAllocLogsJson) {
+    pub(crate) fn update_alloc_logs(&mut self, logs: JsonFunctionAllocLogsList) {
         self.current_alloc_logs = Some(logs);
     }
 
@@ -216,7 +215,7 @@ impl App {
         self.request_function_logs_if_open();
     }
 
-    pub(crate) fn update_streams(&mut self, streams: FormattedStreamsJson) {
+    pub(crate) fn update_streams(&mut self, streams: JsonStreamsList) {
         // Capture the currently selected stream ID (not index!)
         let selected_stream_id = self
             .streams_table_state
@@ -257,7 +256,7 @@ impl App {
         }
     }
 
-    pub(crate) fn update_threads(&mut self, threads: FormattedThreadsJson) {
+    pub(crate) fn update_threads(&mut self, threads: JsonThreadsList) {
         // Capture the currently selected thread TID (not index!)
         let selected_thread_tid = self
             .threads_table_state
@@ -309,12 +308,12 @@ impl App {
         }
     }
 
-    pub(crate) fn handle_stream_logs(&mut self, _stream_id: u64, logs: FormattedStreamLogs) {
-        self.stream_logs = Some(CachedStreamLogs { logs });
+    pub(crate) fn handle_stream_logs(&mut self, _stream_id: u64, logs: JsonStreamLogsList) {
+        self.stream_logs = Some(logs);
 
         // Ensure logs table selection is valid
         if let Some(ref cached_logs) = self.stream_logs {
-            let log_count = cached_logs.logs.logs.len();
+            let log_count = cached_logs.logs.len();
             if let Some(selected) = self.stream_logs_table_state.selected() {
                 if selected >= log_count && log_count > 0 {
                     self.stream_logs_table_state.select(Some(log_count - 1));
@@ -439,7 +438,7 @@ impl App {
                 self.loading_futures = false;
                 self.update_futures(data);
             }
-            DataResponse::FutureCalls { future_id, calls } => {
+            DataResponse::FutureLogs { future_id, calls } => {
                 trace!(
                     "Received future {} calls: {} entries",
                     future_id,
@@ -448,21 +447,16 @@ impl App {
                 self.handle_future_calls(future_id, calls);
             }
             DataResponse::Debug(data) => {
-                trace!("Received debug data: {} entries", data.debug_logs.len());
+                trace!("Received debug data: {} entries", data.entries.len());
                 self.loading_debug = false;
                 self.update_debug(data);
             }
-            DataResponse::DebugLogs {
-                source,
-                expression,
-                logs,
-            } => {
-                trace!(
-                    "Received debug {}|{} logs: {} entries",
-                    source,
-                    expression,
-                    logs.logs.len()
-                );
+            DataResponse::DebugDbgLogs { id, logs } => {
+                trace!("Received dbg logs for {}: {} entries", id, logs.len());
+                self.handle_debug_logs(logs);
+            }
+            DataResponse::DebugValLogs { id, logs } => {
+                trace!("Received val logs for {}: {} entries", id, logs.len());
                 self.handle_debug_logs(logs);
             }
             DataResponse::DebugLogsNotFound { .. } => {
@@ -481,7 +475,7 @@ impl App {
         }
     }
 
-    pub(crate) fn update_futures(&mut self, futures: FormattedFuturesJson) {
+    pub(crate) fn update_futures(&mut self, futures: JsonFuturesList) {
         // Capture the currently selected future ID (not index!)
         let selected_future_id = self
             .futures_table_state
@@ -537,7 +531,7 @@ impl App {
         }
     }
 
-    pub(crate) fn handle_future_calls(&mut self, _future_id: u64, calls: FormattedFutureCalls) {
+    pub(crate) fn handle_future_calls(&mut self, _future_id: u64, calls: JsonFutureLogsList) {
         self.future_calls = Some(calls);
 
         // Ensure calls table selection is valid
@@ -551,14 +545,14 @@ impl App {
         }
     }
 
-    pub(crate) fn update_debug(&mut self, debug: FormattedDbgJson) {
+    pub(crate) fn update_debug(&mut self, debug: JsonDebugList) {
         let selected_id = self
             .debug_table_state
             .selected()
             .and_then(|idx| self.debug_stats.get(idx))
-            .map(|stat| stat.id.clone());
+            .map(|stat| stat.id);
 
-        self.debug_stats = debug.debug_logs;
+        self.debug_stats = debug.entries;
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
@@ -589,19 +583,20 @@ impl App {
         if let Some(selected) = self.debug_table_state.selected() {
             if !self.debug_stats.is_empty() && selected < self.debug_stats.len() {
                 let stat = &self.debug_stats[selected];
-                let _ = self.request_tx.send(DataRequest::FetchDebugLogs {
-                    source: stat.source.clone(),
-                    expression: stat.expression.clone(),
-                });
+                let request = match stat.entry_type {
+                    DebugEntryType::Dbg => DataRequest::FetchDebugDbgLogs(stat.id),
+                    DebugEntryType::Val => DataRequest::FetchDebugValLogs(stat.id),
+                };
+                let _ = self.request_tx.send(request);
             }
         }
     }
 
-    pub(crate) fn handle_debug_logs(&mut self, logs: FormattedDbgLogs) {
-        self.debug_logs = Some(CachedDebugLogs { logs });
+    pub(crate) fn handle_debug_logs(&mut self, logs: Vec<hotpath::json::JsonDebugLog>) {
+        self.debug_logs = Some(logs);
 
         if let Some(ref cached_logs) = self.debug_logs {
-            let log_count = cached_logs.logs.logs.len();
+            let log_count = cached_logs.len();
             if let Some(selected) = self.debug_logs_table_state.selected() {
                 if selected >= log_count && log_count > 0 {
                     self.debug_logs_table_state.select(Some(log_count - 1));

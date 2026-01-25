@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-pub use crate::output::FunctionLogsJson;
+pub use crate::output::FunctionLogsList;
 
 /// State of a channel or stream.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -94,14 +94,14 @@ impl<'de> Deserialize<'de> for ChannelType {
 
 /// A single log entry for a message sent/received or item yielded.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LogEntry {
+pub struct DataFlowLogEntry {
     pub index: u64,
     pub timestamp: u64,
     pub message: Option<String>,
     pub tid: Option<u64>,
 }
 
-impl LogEntry {
+impl DataFlowLogEntry {
     pub fn new(index: u64, timestamp: u64, message: Option<String>, tid: Option<u64>) -> Self {
         Self {
             index,
@@ -116,15 +116,15 @@ impl LogEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChannelLogs {
     pub id: String,
-    pub sent_logs: Vec<LogEntry>,
-    pub received_logs: Vec<LogEntry>,
+    pub sent_logs: Vec<DataFlowLogEntry>,
+    pub received_logs: Vec<DataFlowLogEntry>,
 }
 
 /// Serializable log response containing yielded logs for streams.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamLogs {
     pub id: String,
-    pub logs: Vec<LogEntry>,
+    pub logs: Vec<DataFlowLogEntry>,
 }
 
 /// State of an instrumented future.
@@ -159,7 +159,7 @@ impl std::fmt::Display for FutureState {
 
 /// A single invocation/call of a future.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FutureCall {
+pub struct FutureLog {
     pub id: u64,
     pub future_id: u64,
     pub state: FutureState,
@@ -167,7 +167,7 @@ pub struct FutureCall {
     pub result: Option<String>,
 }
 
-impl FutureCall {
+impl FutureLog {
     pub fn new(id: u64, future_id: u64) -> Self {
         Self {
             id,
@@ -183,7 +183,7 @@ impl FutureCall {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FutureCalls {
     pub id: String,
-    pub calls: Vec<FutureCall>,
+    pub calls: Vec<FutureLog>,
 }
 
 /// Thread metrics collected from the OS.
@@ -266,12 +266,13 @@ pub enum Route {
     /// GET /streams/{id}/logs - Returns logs for a specific stream
     StreamLogs { stream_id: u64 },
     /// GET /futures/{id}/calls - Returns calls for a specific future
-    FutureCalls { future_id: u64 },
+    FutureLogs { future_id: u64 },
     /// GET /debug - Returns all debug log statistics
-    DebugStats,
-    /// GET /debug/{base64_id}/logs - Returns logs for a specific debug location
-    /// The id is formatted as "source|expression"
-    DebugLogs { source: String, expression: String },
+    Debug,
+    /// GET /debug/dbg/{id}/logs - Returns logs for a dbg! entry
+    DebugDbgLogs { id: u64 },
+    /// GET /debug/val/{id}/logs - Returns logs for a val! entry
+    DebugValLogs { id: u64 },
 }
 
 impl Route {
@@ -297,13 +298,10 @@ impl Route {
             }
             Route::ChannelLogs { channel_id } => format!("/channels/{}/logs", channel_id),
             Route::StreamLogs { stream_id } => format!("/streams/{}/logs", stream_id),
-            Route::FutureCalls { future_id } => format!("/futures/{}/calls", future_id),
-            Route::DebugStats => "/debug".to_string(),
-            Route::DebugLogs { source, expression } => {
-                let id = format!("{}\0{}", source, expression);
-                let encoded = base64::engine::general_purpose::STANDARD.encode(id.as_bytes());
-                format!("/debug/{}/logs", encoded)
-            }
+            Route::FutureLogs { future_id } => format!("/futures/{}/logs", future_id),
+            Route::Debug => "/debug".to_string(),
+            Route::DebugDbgLogs { id } => format!("/debug/dbg/{}/logs", id),
+            Route::DebugValLogs { id } => format!("/debug/val/{}/logs", id),
         }
     }
 
@@ -318,13 +316,15 @@ static RE_CHANNEL_LOGS: LazyLock<Regex> =
 static RE_STREAM_LOGS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^/streams/(\d+)/logs$").unwrap());
 static RE_FUTURE_CALLS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^/futures/(\d+)/calls$").unwrap());
+    LazyLock::new(|| Regex::new(r"^/futures/(\d+)/logs$").unwrap());
 static RE_FUNCTION_LOGS_TIMING: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^/functions_timing/([^/]+)/logs$").unwrap());
 static RE_FUNCTION_LOGS_ALLOC: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^/functions_alloc/([^/]+)/logs$").unwrap());
-static RE_DEBUG_LOGS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^/debug/([^/]+)/logs$").unwrap());
+static RE_DEBUG_DBG_LOGS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^/debug/dbg/(\d+)/logs$").unwrap());
+static RE_DEBUG_VAL_LOGS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^/debug/val/(\d+)/logs$").unwrap());
 
 fn base64_decode(encoded: &str) -> Result<String, String> {
     use base64::Engine;
@@ -349,7 +349,7 @@ impl FromStr for Route {
             "/streams" => return Ok(Route::Streams),
             "/futures" => return Ok(Route::Futures),
             "/threads" => return Ok(Route::Threads),
-            "/debug" => return Ok(Route::DebugStats),
+            "/debug" => return Ok(Route::Debug),
             _ => {}
         }
 
@@ -375,16 +375,17 @@ impl FromStr for Route {
 
         if let Some(caps) = RE_FUTURE_CALLS.captures(path) {
             let future_id = caps[1].parse().map_err(|_| ())?;
-            return Ok(Route::FutureCalls { future_id });
+            return Ok(Route::FutureLogs { future_id });
         }
 
-        if let Some(caps) = RE_DEBUG_LOGS.captures(path) {
-            let id = base64_decode(&caps[1]).map_err(|_| ())?;
-            let (source, expression) = id.split_once('\0').ok_or(())?;
-            return Ok(Route::DebugLogs {
-                source: source.to_string(),
-                expression: expression.to_string(),
-            });
+        if let Some(caps) = RE_DEBUG_DBG_LOGS.captures(path) {
+            let id = caps[1].parse().map_err(|_| ())?;
+            return Ok(Route::DebugDbgLogs { id });
+        }
+
+        if let Some(caps) = RE_DEBUG_VAL_LOGS.captures(path) {
+            let id = caps[1].parse().map_err(|_| ())?;
+            return Ok(Route::DebugValLogs { id });
         }
 
         Err(())

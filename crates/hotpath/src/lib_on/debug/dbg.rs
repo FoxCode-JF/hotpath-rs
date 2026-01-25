@@ -10,12 +10,10 @@ use std::time::Instant;
 
 use crate::channels::{extract_filename, START_TIME};
 use crate::debug::{
-    get_all_debug_stats, get_sorted_debug_stats, init_debug_state, send_debug_event, DebugEvent,
-    DebugStats,
+    get_sorted_debug_stats, get_sorted_value_stats, init_debug_state, send_debug_event, DbgEntry,
+    DebugEvent,
 };
-use crate::json::{
-    format_time_ago, FormattedDbgJson, FormattedDbgLogEntry, FormattedDbgLogs, FormattedDbgStats,
-};
+use crate::json::{format_time_ago, JsonDebugDbgLogs, JsonDebugEntry, JsonDebugList, JsonDebugLog};
 use crate::output::{format_duration, truncate_result};
 
 fn get_thread_id() -> Option<u64> {
@@ -31,7 +29,7 @@ pub fn log_dbg<T: Debug>(source: &'static str, expression: &'static str, value: 
     let timestamp = Instant::now();
     let tid = get_thread_id();
 
-    send_debug_event(DebugEvent::DbgLog {
+    send_debug_event(DebugEvent::Dbg {
         source,
         expression,
         value: value_str,
@@ -40,32 +38,40 @@ pub fn log_dbg<T: Debug>(source: &'static str, expression: &'static str, value: 
     });
 }
 
-pub fn get_dbg_stats_json() -> FormattedDbgJson {
-    let stats = get_sorted_debug_stats();
-    let formatted: Vec<FormattedDbgStats> = stats.iter().map(FormattedDbgStats::from).collect();
+pub fn get_debug_entries_json() -> JsonDebugList {
+    let dbg_stats = get_sorted_debug_stats();
+    let val_stats = get_sorted_value_stats();
+
+    let mut formatted: Vec<JsonDebugEntry> = dbg_stats.iter().map(JsonDebugEntry::from).collect();
+    formatted.extend(val_stats.iter().map(JsonDebugEntry::from));
+
+    formatted.sort_by(|a, b| {
+        a.entry_type
+            .as_str()
+            .cmp(b.entry_type.as_str())
+            .then(a.source.cmp(&b.source))
+            .then(a.expression.cmp(&b.expression))
+    });
 
     let current_elapsed_ns = START_TIME
         .get()
         .map(|t| t.elapsed().as_nanos() as u64)
         .unwrap_or(0);
 
-    FormattedDbgJson {
+    JsonDebugList {
         current_elapsed_ns,
-        debug_logs: formatted,
+        entries: formatted,
     }
 }
 
-pub fn get_dbg_logs(source: &str, expression: &str) -> Option<FormattedDbgLogs> {
+pub fn get_dbg_logs(id: u64) -> Option<JsonDebugDbgLogs> {
     let current_elapsed_ns = START_TIME
         .get()
         .map(|t| t.elapsed().as_nanos() as u64)
         .unwrap_or(0);
 
-    let stats = get_all_debug_stats();
-    stats
-        .iter()
-        .find(|((s, e), _)| *s == source && *e == expression)
-        .map(|(_, s)| FormattedDbgLogs::from_stats(s, current_elapsed_ns))
+    crate::debug::get_debug_stats_by_id(id)
+        .map(|s| JsonDebugDbgLogs::from_stats(&s, current_elapsed_ns))
 }
 
 fn truncate_source_path(source: &str) -> String {
@@ -78,36 +84,37 @@ fn truncate_source_path(source: &str) -> String {
     }
 }
 
-impl From<&DebugStats> for FormattedDbgStats {
-    fn from(stats: &DebugStats) -> Self {
-        let id = format!("{}\0{}", stats.source, stats.expression);
+impl From<&DbgEntry> for JsonDebugEntry {
+    fn from(stats: &DbgEntry) -> Self {
         let last_value = stats.logs.back().map(|e| e.value.clone());
-        FormattedDbgStats {
+        JsonDebugEntry {
+            id: stats.id,
+            entry_type: crate::json::DebugEntryType::Dbg,
             source: stats.source.to_string(),
             source_display: truncate_source_path(stats.source),
             expression: stats.expression.to_string(),
             log_count: stats.log_count,
-            id,
             last_value,
         }
     }
 }
 
-impl FormattedDbgLogs {
-    pub fn from_stats(stats: &DebugStats, current_elapsed_ns: u64) -> Self {
-        FormattedDbgLogs {
+impl JsonDebugDbgLogs {
+    pub fn from_stats(stats: &DbgEntry, current_elapsed_ns: u64) -> Self {
+        JsonDebugDbgLogs {
             source: truncate_source_path(stats.source),
             expression: stats.expression.to_string(),
             total_logs: stats.log_count,
             logs: stats
                 .logs
                 .iter()
-                .map(|e| FormattedDbgLogEntry {
+                .map(|e| JsonDebugLog {
                     index: e.index,
                     timestamp: format_duration(e.timestamp_ns),
                     ago: format_time_ago(current_elapsed_ns.saturating_sub(e.timestamp_ns)),
                     value: e.value.clone(),
                     thread_id: e.tid,
+                    source: None,
                 })
                 .collect(),
         }

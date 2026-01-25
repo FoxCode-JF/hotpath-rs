@@ -3,10 +3,9 @@
 use crossterm::event::KeyCode;
 use hotpath::json::Route;
 use hotpath::json::{
-    FormattedChannelLogs, FormattedChannelsJson, FormattedDbgJson, FormattedDbgLogs,
-    FormattedFunctionAllocLogsJson, FormattedFunctionTimingLogsJson, FormattedFunctionsJson,
-    FormattedFutureCalls, FormattedFuturesJson, FormattedStreamLogs, FormattedStreamsJson,
-    FormattedThreadsJson,
+    JsonChannelLogsList, JsonChannelsList, JsonDebugList, JsonDebugLog, JsonFunctionAllocLogsList,
+    JsonFunctionTimingLogsList, JsonFunctionsList, JsonFutureLogsList, JsonFuturesList,
+    JsonStreamLogsList, JsonStreamsList, JsonThreadsList,
 };
 
 #[derive(Debug)]
@@ -23,7 +22,8 @@ pub(crate) enum DataRequest {
     FetchChannelLogs(u64),
     FetchStreamLogs(u64),
     FetchFutureCalls(u64),
-    FetchDebugLogs { source: String, expression: String },
+    FetchDebugDbgLogs(u64),
+    FetchDebugValLogs(u64),
 }
 
 impl DataRequest {
@@ -35,7 +35,7 @@ impl DataRequest {
             DataRequest::RefreshStreams => Route::Streams,
             DataRequest::RefreshThreads => Route::Threads,
             DataRequest::RefreshFutures => Route::Futures,
-            DataRequest::RefreshDebug => Route::DebugStats,
+            DataRequest::RefreshDebug => Route::Debug,
             DataRequest::FetchFunctionLogsTiming(name) => Route::FunctionTimingLogs {
                 function_name: name.clone(),
             },
@@ -44,11 +44,9 @@ impl DataRequest {
             },
             DataRequest::FetchChannelLogs(id) => Route::ChannelLogs { channel_id: *id },
             DataRequest::FetchStreamLogs(id) => Route::StreamLogs { stream_id: *id },
-            DataRequest::FetchFutureCalls(id) => Route::FutureCalls { future_id: *id },
-            DataRequest::FetchDebugLogs { source, expression } => Route::DebugLogs {
-                source: source.clone(),
-                expression: expression.clone(),
-            },
+            DataRequest::FetchFutureCalls(id) => Route::FutureLogs { future_id: *id },
+            DataRequest::FetchDebugDbgLogs(id) => Route::DebugDbgLogs { id: *id },
+            DataRequest::FetchDebugValLogs(id) => Route::DebugValLogs { id: *id },
         }
     }
 }
@@ -56,44 +54,46 @@ impl DataRequest {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub(crate) enum DataResponse {
-    FunctionsTiming(FormattedFunctionsJson),
-    FunctionsAlloc(FormattedFunctionsJson),
+    FunctionsTiming(JsonFunctionsList),
+    FunctionsAlloc(JsonFunctionsList),
     FunctionsAllocUnavailable,
     FunctionLogsTiming {
         function_name: String,
-        logs: FormattedFunctionTimingLogsJson,
+        logs: JsonFunctionTimingLogsList,
     },
     FunctionLogsTimingNotFound(String),
     FunctionLogsAlloc {
         function_name: String,
-        logs: FormattedFunctionAllocLogsJson,
+        logs: JsonFunctionAllocLogsList,
     },
     FunctionLogsAllocNotFound(String),
-    Channels(FormattedChannelsJson),
+    Channels(JsonChannelsList),
     ChannelLogs {
         channel_id: u64,
-        logs: FormattedChannelLogs,
+        logs: JsonChannelLogsList,
     },
-    Streams(FormattedStreamsJson),
+    Streams(JsonStreamsList),
     StreamLogs {
         stream_id: u64,
-        logs: FormattedStreamLogs,
+        logs: JsonStreamLogsList,
     },
-    Threads(FormattedThreadsJson),
-    Futures(FormattedFuturesJson),
-    FutureCalls {
+    Threads(JsonThreadsList),
+    Futures(JsonFuturesList),
+    FutureLogs {
         future_id: u64,
-        calls: FormattedFutureCalls,
+        calls: JsonFutureLogsList,
     },
-    Debug(FormattedDbgJson),
-    DebugLogs {
-        source: String,
-        expression: String,
-        logs: FormattedDbgLogs,
+    Debug(JsonDebugList),
+    DebugDbgLogs {
+        id: u64,
+        logs: Vec<JsonDebugLog>,
+    },
+    DebugValLogs {
+        id: u64,
+        logs: Vec<JsonDebugLog>,
     },
     DebugLogsNotFound {
-        source: String,
-        expression: String,
+        id: u64,
     },
     Error(String),
 }

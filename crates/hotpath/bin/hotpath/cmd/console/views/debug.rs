@@ -4,7 +4,7 @@ pub(crate) mod logs;
 use crate::cmd::console::app::DebugFocus;
 use crate::cmd::console::views::common_styles;
 use crate::cmd::console::widgets::formatters::truncate_left;
-use hotpath::json::FormattedDbgStats;
+use hotpath::json::JsonDebugEntry;
 use ratatui::{
     layout::{Constraint, Rect},
     style::Style,
@@ -16,7 +16,7 @@ use ratatui::{
 #[hotpath::measure]
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn render_debug_panel(
-    stats: &[FormattedDbgStats],
+    stats: &[JsonDebugEntry],
     area: Rect,
     frame: &mut Frame,
     table_state: &mut TableState,
@@ -26,14 +26,15 @@ pub(crate) fn render_debug_panel(
     total: usize,
 ) {
     let available_width = area.width.saturating_sub(10);
-    let source_width = ((available_width as f32 * 0.25) as usize).max(15);
-    let expr_width = ((available_width as f32 * 0.25) as usize).max(15);
-    let value_width = ((available_width as f32 * 0.35) as usize).max(20);
+    let source_width = ((available_width as f32 * 0.22) as usize).max(12);
+    let label_width = ((available_width as f32 * 0.22) as usize).max(12);
+    let value_width = ((available_width as f32 * 0.30) as usize).max(15);
 
     let header = Row::new(vec![
+        Cell::from("Type"),
         Cell::from("Source"),
-        Cell::from("Expression"),
-        Cell::from("Last Value"),
+        Cell::from("Key/Expr"),
+        Cell::from("Last"),
         Cell::from("Count"),
     ])
     .style(common_styles::HEADER_STYLE)
@@ -43,9 +44,11 @@ pub(crate) fn render_debug_panel(
         .iter()
         .map(|stat| {
             let last_value = stat.last_value.as_deref().unwrap_or("-");
+            let entry_type = stat.entry_type.as_str();
             Row::new(vec![
+                Cell::from(entry_type),
                 Cell::from(truncate_left(&stat.source_display, source_width)),
-                Cell::from(truncate_left(&stat.expression, expr_width)),
+                Cell::from(truncate_left(&stat.expression, label_width)),
                 Cell::from(truncate_left(last_value, value_width)),
                 Cell::from(stat.log_count.to_string()),
             ])
@@ -53,10 +56,11 @@ pub(crate) fn render_debug_panel(
         .collect();
 
     let widths = [
-        Constraint::Percentage(25),
-        Constraint::Percentage(25),
-        Constraint::Percentage(35),
-        Constraint::Percentage(15),
+        Constraint::Length(4),
+        Constraint::Percentage(22),
+        Constraint::Percentage(22),
+        Constraint::Percentage(33),
+        Constraint::Percentage(10),
     ];
 
     let table_block = if show_logs {
