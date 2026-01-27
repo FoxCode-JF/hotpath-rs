@@ -319,52 +319,6 @@ let s = hotpath::stream!(stream::iter(1..=100), label = "data_stream");
 let s = hotpath::stream!(stream::iter(1..=100), log = true);
 ```
 
-### Debug Helpers
-
-`hotpath` provides macros for tracking values and logging debug info that can be viewed in the TUI's "Data Flow" tab.
-
-#### `hotpath::dbg!`
-
-Works like `std::dbg!` but sends debug output to the profiler. Logs are grouped by source location and viewable in the TUI.
-
-```rust
-// Debug a single value - logs "3"
-hotpath::dbg!(1 + 2);
-
-// Debug multiple values 
-hotpath::dbg!(foo(), bar());
-```
-
-#### `hotpath::val!`
-
-Tracks key-value pairs. Unlike `dbg!`, values are grouped by key name, making it useful for tracking named metrics across different code locations.
-
-```rust
-// Track a counter value
-hotpath::val!("request_count").set(&count);
-
-// Track state changes
-hotpath::val!("connection_state").set(&state);
-```
-
-#### `hotpath::gauge!`
-
-Tracks numeric values with set/increment/decrement operations. Gauges display current value, min/max, and update history.
-
-```rust
-// Set an absolute value
-hotpath::gauge!("queue_size").set(42.0);
-
-// Increment/decrement
-hotpath::gauge!("active_connections").inc(1);
-hotpath::gauge!("active_connections").dec(1);
-
-// Chain operations
-hotpath::gauge!("counter").set(0.0).inc(5.0).dec(2.0);
-```
-
-All debug macros need the `hotpath` feature to be work and are no-op otherwise. Values can be inspected in the TUI under the "Data Flow" tab or via the HTTP API at `/debug`.
-
 ### Viewing Channel and Stream Metrics in TUI
 
 When using the live TUI dashboard, channel and stream statistics are displayed alongside function metrics. The TUI shows:
@@ -448,6 +402,52 @@ let _guard = hotpath::ChannelsGuardBuilder::new()
 3. **Background thread** - Measurements are sent to a dedicated worker thread via bounded channel
 4. **Statistics aggregation** - Worker thread maintains running statistics for each function/code block
 5. **Automatic reporting** - Performance summary displayed when the program exits
+
+## Debug Helpers
+
+`hotpath` provides macros for tracking values and logging debug info that can be viewed in the TUI's "Data Flow" tab.
+
+#### `hotpath::dbg!`
+
+Works like `std::dbg!` but sends debug output to the profiler. Logs are grouped by source location and viewable in the TUI.
+
+```rust
+// Debug a single value - logs "3"
+hotpath::dbg!(1 + 2);
+
+// Debug multiple values 
+hotpath::dbg!(foo(), bar());
+```
+
+#### `hotpath::val!`
+
+Tracks key-value pairs. Unlike `dbg!`, values are grouped by key name, making it useful for tracking named metrics across different code locations.
+
+```rust
+// Track a counter value
+hotpath::val!("request_count").set(&count);
+
+// Track state changes
+hotpath::val!("connection_state").set(&state);
+```
+
+#### `hotpath::gauge!`
+
+Tracks numeric values with set/increment/decrement operations. Gauges display current value, min/max, and update history.
+
+```rust
+// Set an absolute value
+hotpath::gauge!("queue_size").set(42.0);
+
+// Increment/decrement
+hotpath::gauge!("active_connections").inc(1);
+hotpath::gauge!("active_connections").dec(1);
+
+// Chain operations
+hotpath::gauge!("counter").set(0.0).inc(5.0).dec(2.0);
+```
+
+All debug macros need the `hotpath` feature to be work and are no-op otherwise. Values can be inspected in the TUI under the "Data Flow" tab or via the HTTP API at `/debug`.
 
 ## API
 
