@@ -3,6 +3,7 @@ fn main() {
     let y = hotpath::dbg!(x * 2);
     let name = "test";
     hotpath::dbg!(name);
+    hotpath::dbg!(&name);
     let _ = hotpath::dbg!(y + 1);
 
     std::thread::sleep(std::time::Duration::from_millis(

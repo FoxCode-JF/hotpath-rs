@@ -10,10 +10,12 @@ macro_rules! measure_block {
 #[macro_export]
 macro_rules! dbg {
     ($val:expr $(,)?) => {
-        $val
+        match $val {
+            tmp => tmp
+        }
     };
     ($($val:expr),+ $(,)?) => {
-        ($($val),+,)
+        ($($crate::dbg!($val)),+,)
     };
 }
 
