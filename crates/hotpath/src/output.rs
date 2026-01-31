@@ -2,13 +2,65 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "hotpath")]
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 #[cfg(feature = "hotpath")]
 use std::time::Duration;
 
 #[cfg(feature = "hotpath")]
 use crate::FunctionStats;
 
-pub use crate::shared::{format_bytes, format_duration, MetricType, ProfilingMode};
+pub use crate::shared::{
+    format_bytes, format_duration, MetricType, OutputDestination, ProfilingMode,
+};
+
+impl OutputDestination {
+    /// Creates a writer for this destination.
+    ///
+    /// Returns a boxed writer that implements `Write`.
+    /// For `Stdout`, returns a handle to stdout.
+    /// For `File`, creates parent directories if needed, then creates or truncates the file.
+    pub fn writer(&self) -> Result<Box<dyn Write>, std::io::Error> {
+        match self {
+            OutputDestination::Stdout => Ok(Box::new(std::io::stdout())),
+            OutputDestination::File(path) => {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                Ok(Box::new(File::create(path)?))
+            }
+        }
+    }
+
+    /// Creates an OutputDestination from an optional path.
+    ///
+    /// Environment variable `HOTPATH_OUTPUT_PATH` takes precedence over programmatic config.
+    /// If the path is provided, resolves relative paths against the current working directory.
+    /// If no path is provided, returns Stdout.
+    pub fn from_path(path: Option<PathBuf>) -> Self {
+        if let Ok(env_path) = std::env::var("HOTPATH_OUTPUT_PATH") {
+            return OutputDestination::File(resolve_output_path(env_path));
+        }
+
+        match path {
+            Some(p) => OutputDestination::File(p),
+            None => OutputDestination::Stdout,
+        }
+    }
+}
+
+/// Resolves a path, converting relative paths to absolute by joining with cwd.
+pub fn resolve_output_path(path: impl AsRef<std::path::Path>) -> PathBuf {
+    let path = path.as_ref();
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(path))
+            .unwrap_or_else(|_| path.to_path_buf())
+    }
+}
 
 impl Serialize for MetricType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -100,13 +152,17 @@ pub fn shorten_function_name(function_name: &str) -> String {
 /// # Examples
 ///
 /// ```rust
-/// use hotpath::{Reporter, MetricsProvider};
+/// use hotpath::{Reporter, MetricsProvider, OutputDestination};
 /// use std::error::Error;
 ///
 /// struct SimpleLogger;
 ///
 /// impl Reporter for SimpleLogger {
-///     fn report(&self, metrics: &dyn MetricsProvider<'_>) -> Result<(), Box<dyn Error>> {
+///     fn report(
+///         &self,
+///         metrics: &dyn MetricsProvider<'_>,
+///         _output: &OutputDestination,
+///     ) -> Result<(), Box<dyn Error>> {
 ///         println!("Profiling {} complete", metrics.caller_name());
 ///         println!("Functions measured: {}", metrics.metric_data().len());
 ///         Ok(())
@@ -119,9 +175,11 @@ pub fn shorten_function_name(function_name: &str) -> String {
 /// * [`MetricsProvider`] - Trait for accessing profiling metrics data
 /// * `FunctionsGuardBuilder::reporter` - Method to set custom reporter
 pub trait Reporter: Send + Sync {
+    /// Generate a report to the specified output destination.
     fn report(
         &self,
         metrics_provider: &dyn MetricsProvider<'_>,
+        output: &OutputDestination,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
