@@ -4,23 +4,6 @@
 //! For a complete setup guide, examples, and advanced configuration, visit
 //! [hotpath.rs](https://hotpath.rs).
 
-/// Output format for profiling reports.
-///
-/// This enum specifies how profiling results should be displayed when the program exits.
-///
-/// # Variants
-///
-/// * `Table` - Human-readable table format (default)
-/// * `Json` - JSON format
-/// * `JsonPretty` - Pretty-printed JSON format
-#[derive(Clone, Copy, Debug, Default)]
-pub enum Format {
-    #[default]
-    Table,
-    Json,
-    JsonPretty,
-}
-
 #[cfg(all(feature = "hotpath", not(feature = "hotpath-off")))]
 #[doc(inline)]
 pub use lib_on::*;
@@ -79,4 +62,4 @@ pub use lib_off::futures;
 pub use lib_off::streams;
 
 mod shared;
-pub use shared::IntoF64;
+pub use shared::{Format, IntoF64};

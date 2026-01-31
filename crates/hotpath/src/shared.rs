@@ -1,6 +1,23 @@
 use std::fmt;
 use std::path::PathBuf;
 
+/// Output format for profiling reports.
+///
+/// This enum specifies how profiling results should be displayed when the program exits.
+///
+/// # Variants
+///
+/// * `Table` - Human-readable table format (default)
+/// * `Json` - JSON format
+/// * `JsonPretty` - Pretty-printed JSON format
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Format {
+    #[default]
+    Table,
+    Json,
+    JsonPretty,
+}
+
 /// Destination for profiling report output.
 #[derive(Default)]
 pub enum OutputDestination {
