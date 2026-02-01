@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use hotpath::{OutputDestination, Reporter};
-
 /// Run with:
 /// cargo test -p test-tokio-async --example unit_test --features hotpath -- --nocapture --test-threads=1
 #[hotpath::measure]
@@ -12,38 +10,6 @@ fn sync_function(sleep: u64) {
     let vec2 = vec![1, 2, 3, 5, 6];
     std::hint::black_box(&vec2);
     std::thread::sleep(Duration::from_nanos(sleep));
-}
-
-#[allow(unused)]
-struct UnitTestReporter;
-
-impl Reporter for UnitTestReporter {
-    fn report(
-        &self,
-        metrics_provider: &dyn hotpath::MetricsProvider<'_>,
-        _output: &OutputDestination,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if metrics_provider.metric_data().is_empty() {
-            println!("No metrics to report");
-            return Ok(());
-        }
-
-        let metric_data = metrics_provider.metric_data();
-
-        let sync_function_metrics = metric_data
-            .iter()
-            .find(|(name, _)| name == "unit_test::sync_function")
-            .map(|(_, metrics)| metrics)
-            .unwrap();
-
-        let alloc_count = &sync_function_metrics[1];
-        if let hotpath::MetricType::Alloc(_bytes, count) = alloc_count {
-            assert!(count < &3, "AllocCount is not less than 3: {}", count);
-        } else {
-            panic!("Expected AllocCount metric, got {:?}", alloc_count);
-        }
-        Ok(())
-    }
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -58,13 +24,84 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hotpath::json::{JsonChannelsList, JsonFunctionsList};
 
     #[test]
-    fn test_sync_function() {
-        let _hotpath = hotpath::FunctionsGuardBuilder::new("test_sync_function")
-            .reporter(Box::new(UnitTestReporter))
-            .build();
+    fn test_sync_function_is_measured() {
+        let temp_file = std::env::temp_dir().join("hotpath_unit_test.json");
 
-        sync_function(100);
+        {
+            let _hotpath = hotpath::FunctionsGuardBuilder::new("test_sync_function")
+                .format(hotpath::Format::Json)
+                .output_path(&temp_file)
+                .build();
+
+            for _ in 0..10 {
+                sync_function(100);
+            }
+        }
+
+        let json_content = std::fs::read_to_string(&temp_file).expect("Failed to read output file");
+        let metrics: JsonFunctionsList =
+            serde_json::from_str(&json_content).expect("Failed to parse JSON");
+
+        let sync_fn_entry = metrics
+            .data
+            .iter()
+            .find(|entry| entry.name == "unit_test::sync_function")
+            .expect("sync_function should be in metrics");
+
+        assert_eq!(
+            sync_fn_entry.calls, 10,
+            "Expected 10 calls to sync_function"
+        );
+
+        std::fs::remove_file(&temp_file).ok();
+    }
+
+    #[tokio::test]
+    async fn test_channel_is_measured() {
+        let temp_file = std::env::temp_dir().join("hotpath_channel_test.json");
+
+        {
+            let _channels_guard = hotpath::channels::ChannelsGuardBuilder::new()
+                .format(hotpath::Format::Json)
+                .output_path(&temp_file)
+                .build();
+
+            let (tx, mut rx) = hotpath::channel!(
+                tokio::sync::mpsc::channel::<i32>(10),
+                label = "test_channel"
+            );
+
+            for i in 0..5 {
+                tx.send(i).await.expect("Failed to send");
+            }
+
+            drop(tx);
+
+            while rx.recv().await.is_some() {}
+        }
+
+        let json_content = std::fs::read_to_string(&temp_file).expect("Failed to read output file");
+        let metrics: JsonChannelsList =
+            serde_json::from_str(&json_content).expect("Failed to parse JSON");
+
+        let channel_entry = metrics
+            .channels
+            .iter()
+            .find(|entry| entry.label == "test_channel")
+            .expect("test_channel should be in metrics");
+
+        assert_eq!(
+            channel_entry.sent_count, 5,
+            "Expected 5 messages sent on channel"
+        );
+        assert_eq!(
+            channel_entry.received_count, 5,
+            "Expected 5 messages received on channel"
+        );
+
+        std::fs::remove_file(&temp_file).ok();
     }
 }
