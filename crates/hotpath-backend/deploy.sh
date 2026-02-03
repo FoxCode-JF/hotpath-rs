@@ -8,7 +8,7 @@ just docs
 cross build --release --target x86_64-unknown-linux-musl
 
 # Rsync binary
-rsync -avz target/x86_64-unknown-linux-musl/release/server $TARGET_NODE:/root/hotpath-backend/server
+rsync -avz ../../target/x86_64-unknown-linux-musl/release/server $TARGET_NODE:/root/hotpath-backend/server
 
 # Rsync static assets
 rsync -azr --delete html/ $TARGET_NODE:/root/hotpath-backend/html

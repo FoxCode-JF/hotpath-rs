@@ -14,6 +14,9 @@ preferred-dark-theme = "ayu"
 additional-css = ["src/custom.css"]
 edit-url-template = "https://github.com/pawurb/hotpath-rs/edit/main/crates/hotpath-backend/html_src/{path}"
 
+[output.html.print]
+enable = false
+
 [output.html.playground]
 runnable = false
 
