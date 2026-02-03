@@ -2,6 +2,7 @@
 members = [
     "crates/hotpath-macros",
     "crates/hotpath",
+    "crates/hotpath-backend",
     "crates/test-tokio-async",
     "crates/test-smol-async",
     "crates/test-all-features",

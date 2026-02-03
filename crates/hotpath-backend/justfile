@@ -1,0 +1,24 @@
+# Just configuration for hotpath-backend
+
+# Default recipe
+default:
+    @just --list
+
+# Start the server with asset timestamping and environment setup
+server: docs
+    source .envrc && cargo run --bin server
+
+# Build mdbook docs and clean .html links
+docs:
+    cd html_src && mdbook build
+    cargo run --bin clean-html-links html
+
+# Deploy to remote server
+deploy: docs
+    ./deploy.sh
+
+# Deploy and restart server
+release: deploy
+  ./remote/restart.sh
+  echo "Release deployed and server restarted"
+

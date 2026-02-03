@@ -1,0 +1,203 @@
+use crate::config::middleware;
+use axum::{
+    Router,
+    body::Body,
+    extract::Request,
+    http::{HeaderMap, HeaderValue, StatusCode, header},
+    middleware::Next,
+    response::{IntoResponse, Redirect, Response},
+    routing::get,
+};
+use std::path::PathBuf;
+use tower_http::services::ServeDir;
+
+const DOC_PAGES: &[&str] = &[
+    "sampling_comparison",
+    "profiling_modes",
+    "functions",
+    "futures",
+    "channels",
+    "streams",
+    "threads",
+    "mcp",
+    "github_ci",
+];
+
+const BASE_URL: &str = "https://hotpath.rs";
+
+#[hotpath::measure]
+pub fn app() -> Router {
+    use axum::middleware::from_fn;
+    use tower::ServiceBuilder;
+
+    let static_routes = Router::new()
+        .nest_service("/css", ServeDir::new("html/css"))
+        .nest_service("/fonts", ServeDir::new("html/fonts"))
+        .nest_service("/assets", ServeDir::new("assets"))
+        .route_service(
+            "/favicon.ico",
+            tower_http::services::ServeFile::new("assets/favicons/favicon.ico"),
+        )
+        .route_service(
+            "/apple-touch-icon.png",
+            tower_http::services::ServeFile::new("assets/favicons/apple-touch-icon.png"),
+        )
+        .layer(from_fn(set_content_type));
+
+    let mut router = Router::new()
+        .route(
+            "/",
+            get(|| async { serve_doc_page("introduction.html").await }),
+        )
+        .route("/introduction", get(|| async { Redirect::permanent("/") }));
+
+    for page in DOC_PAGES {
+        let html_file = format!("{}.html", page);
+        let clean_path = format!("/{}", page);
+
+        router = router.route(
+            &clean_path,
+            get(move || async move { serve_doc_page_owned(html_file).await }),
+        );
+    }
+
+    router
+        .route("/health", get(health_check))
+        .route("/robots.txt", get(robots_txt))
+        .route("/sitemap.xml", get(sitemap_xml))
+        .merge(static_routes)
+        .fallback_service(
+            ServiceBuilder::new()
+                .layer(from_fn(set_content_type))
+                .service(ServeDir::new("html")),
+        )
+        .layer(from_fn(middleware::seo_titles))
+}
+
+async fn health_check() -> impl IntoResponse {
+    "OK"
+}
+
+async fn robots_txt() -> impl IntoResponse {
+    let content = format!(
+        "User-agent: *\nAllow: /\n\nSitemap: {}/sitemap.xml\n",
+        BASE_URL
+    );
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        content,
+    )
+}
+
+async fn sitemap_xml() -> impl IntoResponse {
+    let mut urls = vec![];
+
+    // Home page
+    let home_lastmod = get_file_lastmod("html/introduction.html").await;
+    urls.push(format_sitemap_url(&format!("{}/", BASE_URL), home_lastmod));
+
+    for page in DOC_PAGES {
+        let file_path = format!("html/{}.html", page);
+        let lastmod = get_file_lastmod(&file_path).await;
+        urls.push(format_sitemap_url(
+            &format!("{}/{}", BASE_URL, page),
+            lastmod,
+        ));
+    }
+
+    let content = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{}
+</urlset>
+"#,
+        urls.join("\n")
+    );
+
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+        content,
+    )
+}
+
+fn format_sitemap_url(loc: &str, lastmod: Option<String>) -> String {
+    match lastmod {
+        Some(date) => format!(
+            "  <url>\n    <loc>{}</loc>\n    <lastmod>{}</lastmod>\n  </url>",
+            loc, date
+        ),
+        None => format!("  <url>\n    <loc>{}</loc>\n  </url>", loc),
+    }
+}
+
+async fn get_file_lastmod(path: &str) -> Option<String> {
+    let metadata = tokio::fs::metadata(path).await.ok()?;
+    let modified = metadata.modified().ok()?;
+    let duration = modified.duration_since(std::time::UNIX_EPOCH).ok()?;
+    let datetime = time::OffsetDateTime::from_unix_timestamp(duration.as_secs() as i64).ok()?;
+    Some(format!(
+        "{:04}-{:02}-{:02}",
+        datetime.year(),
+        datetime.month() as u8,
+        datetime.day()
+    ))
+}
+
+#[hotpath::measure]
+async fn serve_doc_page(filename: &str) -> Response<Body> {
+    let path = PathBuf::from("html").join(filename);
+    match tokio::fs::read_to_string(&path).await {
+        Ok(content) => html_response(content, StatusCode::OK),
+        Err(_) => html_response("Page not found".to_string(), StatusCode::NOT_FOUND),
+    }
+}
+
+async fn serve_doc_page_owned(filename: String) -> Response<Body> {
+    serve_doc_page(&filename).await
+}
+
+#[hotpath::measure]
+pub fn html_response(body: String, status: StatusCode) -> Response<Body> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        "Content-Type",
+        HeaderValue::from_static("text/html; charset=utf-8"),
+    );
+    (status, headers, body).into_response()
+}
+
+#[hotpath::measure]
+async fn set_content_type(request: Request, next: Next) -> Response {
+    let path = request.uri().path().to_string();
+    let mut response = next.run(request).await;
+
+    // Only set Content-Type if not already set
+    if response.headers().get(header::CONTENT_TYPE).is_none() {
+        let content_type = match path.rsplit('.').next() {
+            Some("html") => Some("text/html; charset=utf-8"),
+            Some("css") => Some("text/css; charset=utf-8"),
+            Some("js") => Some("application/javascript; charset=utf-8"),
+            Some("json") => Some("application/json"),
+            Some("png") => Some("image/png"),
+            Some("jpg") | Some("jpeg") => Some("image/jpeg"),
+            Some("gif") => Some("gif"),
+            Some("svg") => Some("image/svg+xml"),
+            Some("ico") => Some("image/x-icon"),
+            Some("woff") => Some("font/woff"),
+            Some("woff2") => Some("font/woff2"),
+            Some("ttf") => Some("font/ttf"),
+            Some("eot") => Some("application/vnd.ms-fontobject"),
+            _ => None,
+        };
+
+        if let Some(ct) = content_type {
+            response
+                .headers_mut()
+                .insert(header::CONTENT_TYPE, HeaderValue::from_static(ct));
+        }
+    }
+
+    response
+}

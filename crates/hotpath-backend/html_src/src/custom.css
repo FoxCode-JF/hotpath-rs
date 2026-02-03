@@ -1,0 +1,120 @@
+.sidebar-header-links {
+    padding: 10px 20px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
+.sidebar .sidebar-scrollbox {
+    top: 30px !important;
+}
+
+.ferris-img {
+    float: left;
+    margin-right: 15px;
+    width: 20%;
+}
+
+@media (max-width: 768px) {
+    .ferris-img {
+        float: none;
+        display: block;
+        margin: 0 auto 15px auto;
+        width: 80%;
+    }
+}
+
+.site-footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--quote-border);
+    text-align: center;
+    color: var(--inline-code-color);
+    font-size: 1.4rem;
+}
+
+.site-footer p {
+    margin: 0;
+}
+
+.site-footer a,
+.site-footer a:link,
+.site-footer a:visited {
+    color: var(--inline-code-color);
+    text-decoration: none;
+    -webkit-text-fill-color: var(--inline-code-color);
+}
+
+.site-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Hero Row */
+.hero-row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin: 1.5rem 0 2rem 0;
+}
+
+.ferris-img-hero {
+    width: 140px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .hero-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .ferris-img-hero {
+        width: 120px;
+    }
+}
+
+/* SSH Demo Terminal */
+.ssh-demo-container {
+    text-align: center;
+}
+
+.ssh-demo-label {
+    margin-bottom: 1rem;
+}
+
+.terminal-shell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 50px rgba(255, 180, 84, 0.1);
+    cursor: default;
+}
+
+.terminal-prompt {
+    color: #98c379;
+    font-weight: 700;
+    user-select: none;
+}
+
+.terminal-command {
+    color: #ffb454;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .terminal-shell {
+        padding: 0.75rem 1rem;
+    }
+}

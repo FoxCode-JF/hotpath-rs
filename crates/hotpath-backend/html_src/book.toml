@@ -1,0 +1,19 @@
+[book]
+authors = ["pawurb"]
+language = "en"
+src = "src"
+title = "hotpath-rs"
+
+[build]
+build-dir = "../html"
+
+[output.html]
+site-url = "/"
+default-theme = "ayu"
+preferred-dark-theme = "ayu"
+additional-css = ["src/custom.css"]
+
+[output.html.playground]
+runnable = false
+
+[preprocessor.reading-time]
