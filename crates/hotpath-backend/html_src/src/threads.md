@@ -16,4 +16,4 @@ and per-thread metrics:
 - Alloc / Dealloc – Total allocated and deallocated memory attributed to that thread
 - Diff – Net allocation difference (growth or shrinkage in allocated memory since last refresh)
 
-<img src="images/threads-view.png" alt="Function return values logging">
+<img src="images/threads-view.png" alt="Thread CPU usage view">

@@ -78,6 +78,7 @@ const STATIC_EXTENSIONS: &[&str] = &[
 ];
 
 const BASE_URL: &str = "https://hotpath.rs";
+const OG_IMAGE: &str = "https://hotpath.rs/images/hotpath-ferris.png";
 
 pub async fn request_tracing(request: Request, next: Next) -> Response {
     let path = request.uri().path().to_string();
@@ -192,10 +193,32 @@ pub async fn seo_titles(request: Request, next: Next) -> Response {
     let modified = desc_regex.replace(
         &modified,
         format!(
-            "<meta name=\"description\" content=\"{}\">\n    <link rel=\"canonical\" href=\"{}\">",
-            config.description, canonical_url
+            r#"<meta name="description" content="{}">
+    <link rel="canonical" href="{}">
+    <meta property="og:title" content="{}">
+    <meta property="og:description" content="{}">
+    <meta property="og:url" content="{}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{}">
+    <meta property="og:site_name" content="hotpath-rs">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{}">
+    <meta name="twitter:description" content="{}">
+    <meta name="twitter:image" content="{}">"#,
+            config.description,
+            canonical_url,
+            config.title,
+            config.description,
+            canonical_url,
+            OG_IMAGE,
+            config.title,
+            config.description,
+            OG_IMAGE,
         ),
     );
+
+    let h1_regex = Regex::new(r#"<h1 class="menu-title">([^<]*)</h1>"#).unwrap();
+    let modified = h1_regex.replace(&modified, r#"<div class="menu-title">$1</div>"#);
 
     Response::from_parts(parts, Body::from(modified.into_owned())).into_response()
 }
