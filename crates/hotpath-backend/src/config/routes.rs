@@ -49,15 +49,23 @@ pub fn app() -> Router {
             "/",
             get(|| async { serve_doc_page("introduction.html").await }),
         )
-        .route("/introduction", get(|| async { Redirect::permanent("/") }));
+        .route("/introduction", get(|| async { Redirect::permanent("/") }))
+        .route("/introduction.html", get(|| async { Redirect::permanent("/") }))
+        .route("/index.html", get(|| async { Redirect::permanent("/") }));
 
     for page in DOC_PAGES {
         let html_file = format!("{}.html", page);
         let clean_path = format!("/{}", page);
+        let html_path = format!("/{}.html", page);
+        let redirect_target = clean_path.clone();
 
         router = router.route(
             &clean_path,
             get(move || async move { serve_doc_page_owned(html_file).await }),
+        );
+        router = router.route(
+            &html_path,
+            get(move || async move { Redirect::permanent(&redirect_target) }),
         );
     }
 
