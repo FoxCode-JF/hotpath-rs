@@ -286,7 +286,7 @@ async fn set_content_type(request: Request, next: Next) -> Response {
         if is_static {
             response.headers_mut().insert(
                 header::CACHE_CONTROL,
-                HeaderValue::from_static("public, max-age=31536000"),
+                HeaderValue::from_static("public, max-age=31536000, immutable"),
             );
         }
     }
