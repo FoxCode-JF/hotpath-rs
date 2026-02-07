@@ -107,7 +107,7 @@ pub(crate) fn render_function_logs_panel(
         .as_slice();
 
         let selected_row_style = Style::default()
-            .bg(Color::DarkGray)
+            .add_modifier(Modifier::REVERSED)
             .add_modifier(Modifier::BOLD);
 
         let table = Table::new(rows, widths)
