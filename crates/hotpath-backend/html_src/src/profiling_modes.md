@@ -43,7 +43,7 @@ hotpath console
 Then launch your instrumented application (with `hotpath` feature enabled) in a separate terminal to see live performance metrics.
 
 <video width="100%" loop muted playsinline controls>
-  <source src="videos/hotpath-live-dashboard.mp4" type="video/mp4">
+  <source src="{{#asset-hash videos/hotpath-live-dashboard.mp4}}" type="video/mp4">
 </video>
 
 You can learn how to instrument any Rust program in the next sections.
