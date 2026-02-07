@@ -32,18 +32,6 @@ https://github.com/user-attachments/assets/2e890417-2b43-4b1b-8657-a5ef3b458153
 - **Background processing** for minimal profiling impact.
 - **GitHub Actions integration** - configure CI to automatically benchmark your program against a base branch for each PR
 
-## Roadmap 
-
-- [x] latency, memory method calls tracking
-- [x] channels/streams profiling
-- [x] process threads monitoring
-- [x] futures monitoring
-- [x] improved docs on [hotpath.rs](https://hotpath.rs)
-- [x] interactive SSH demo 
-- [x] MCP/LLM interface
-- [ ] runtime metrics 
-- [ ] hosted backend integration
-
 ## Quick Demo
 
 Other then the SSH demo an easy way to quickly try the TUI is to run it in **auto-instrumentation mode**. The TUI process profiles itself and displays its own performance metrics in real time.
