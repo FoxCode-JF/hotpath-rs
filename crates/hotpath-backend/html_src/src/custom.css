@@ -11,6 +11,10 @@
     top: 30px !important;
 }
 
+.menu-title {
+    color: #ffb454 !important;
+}
+
 .ferris-img {
     float: left;
     margin-right: 15px;
@@ -116,5 +120,79 @@
 @media (max-width: 768px) {
     .terminal-shell {
         padding: 0.75rem 1rem;
+    }
+}
+
+/* Trusted By */
+.trusted-by {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.trusted-by-tagline {
+    color: var(--sidebar-fg);
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.trusted-by-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+}
+
+.trusted-by-project {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #ffb454;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.trusted-by-project,
+.trusted-by-project:hover,
+.trusted-by-project:active,
+.trusted-by-project:visited,
+.trusted-by-project:link {
+    text-decoration: none !important;
+}
+
+.trusted-by-project:hover {
+    border-color: rgba(255, 180, 84, 0.4);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 50px rgba(255, 180, 84, 0.1);
+}
+
+.trusted-by-name {
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #ffb454;
+    -webkit-text-fill-color: #ffb454;
+    text-decoration: none;
+}
+
+.trusted-by-project:hover .trusted-by-name {
+    text-decoration: none;
+}
+
+.trusted-by-project img {
+    height: 20px;
+}
+
+@media (max-width: 768px) {
+    .trusted-by-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .trusted-by-project {
+        padding: 0.3rem 0.6rem;
     }
 }
