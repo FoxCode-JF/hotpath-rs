@@ -1,7 +1,7 @@
 # Real-time Rust performance, memory and data flow profiler
 
 <div class="hero-row">
-  <img src="images/hotpath-ferris.png" alt="hotpath-rs Rust profiler mascot Ferris the crab" class="ferris-img-hero">
+  <img src="images/hotpath-ferris.webp" alt="hotpath-rs Rust profiler mascot Ferris the crab" class="ferris-img-hero">
   <div class="ssh-demo-container">
     <p class="ssh-demo-label">Try the TUI demo via SSH - no installation required:</p>
     <div class="terminal-shell">
