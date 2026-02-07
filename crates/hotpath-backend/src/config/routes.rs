@@ -245,7 +245,8 @@ async fn set_content_type(request: Request, next: Next) -> Response {
             Some("json") => Some("application/json"),
             Some("png") => Some("image/png"),
             Some("jpg") | Some("jpeg") => Some("image/jpeg"),
-            Some("gif") => Some("gif"),
+            Some("gif") => Some("image/gif"),
+            Some("webp") => Some("image/webp"),
             Some("svg") => Some("image/svg+xml"),
             Some("ico") => Some("image/x-icon"),
             Some("woff") => Some("font/woff"),
@@ -278,6 +279,7 @@ async fn set_content_type(request: Request, next: Next) -> Response {
                     | "woff2"
                     | "ttf"
                     | "eot"
+                    | "webp"
                     | "mp4"
                     | "webm"
             )
