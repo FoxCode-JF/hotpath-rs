@@ -33,3 +33,13 @@ deploy: docs
 release: deploy
     cd crates/hotpath-backend && ./remote/restart.sh
     echo "Release deployed and server restarted"
+
+# Purge Cloudflare cache
+clean-cache:
+    #!/usr/bin/env bash
+    source crates/hotpath-backend/.envrc
+    curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+        -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
+        -H "X-Auth-Key: ${CLOUDFLARE_API_KEY}" \
+        -H "Content-Type: application/json" \
+        --data '{"purge_everything":true}'
