@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.1] - 2026-02-08
+
+### 🚀 Features
+
+- Tokio runtime metrics
+
+### 🐛 Bug Fixes
+
+- Fix TUI hightlight styling [#161]
+
+### 🚜 Refactor
+
+- TUI styling cleanup
+
+### ⚙️ Miscellaneous Tasks
+
+- Release 0.10.1
+
 ## [0.10.0] - 2026-02-02
 
 ### 🚀 Features
