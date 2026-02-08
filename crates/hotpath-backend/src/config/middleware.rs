@@ -70,6 +70,12 @@ const SEO_MAPPINGS: &[SeoConfig] = &[
         breadcrumb_label: "Threads",
     },
     SeoConfig {
+        path: "/tokio_runtime",
+        title: "Rust Tokio Runtime Monitoring: Worker, Tasks, Stats and Metrics | hotpath-rs",
+        description: "Monitor Tokio runtime internals with hotpath-rs. Track worker thread utilization, task scheduling, queue depths, and I/O driver metrics in real time.",
+        breadcrumb_label: "Tokio Runtime",
+    },
+    SeoConfig {
         path: "/github_ci",
         title: "Rust Performance CI: Automated PR Benchmarking | hotpath-rs",
         description: "Automate Rust performance benchmarking in GitHub Actions. Detect performance regressions on every pull request with hotpath-rs CI integration.",

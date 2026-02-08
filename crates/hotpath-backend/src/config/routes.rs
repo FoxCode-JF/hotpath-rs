@@ -54,6 +54,11 @@ const DOC_PAGES: &[SitemapConfig] = &[
         changefreq: "monthly",
     },
     SitemapConfig {
+        page: "tokio_runtime",
+        priority: "0.6",
+        changefreq: "monthly",
+    },
+    SitemapConfig {
         page: "mcp",
         priority: "0.6",
         changefreq: "monthly",

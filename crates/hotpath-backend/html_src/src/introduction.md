@@ -115,4 +115,5 @@ See the rest of the docs to learn how to instrument and profile your program:
 - [Channels](./channels.html) - track messages flow and throughput
 - [Streams](./streams.html) - instrument async streams
 - [Threads](./threads.html) - monitor threads usage
-- [MCP Server](./mcp.html) - LLM integration via Model Context Protocol 
+- [Tokio Runtime](./tokio_runtime.html) - monitor Tokio runtime worker stats and task scheduling
+- [MCP Server](./mcp.html) - LLM integration via Model Context Protocol

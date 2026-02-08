@@ -8,5 +8,6 @@
 - [Channels](./channels.md)
 - [Streams](./streams.md)
 - [Threads](./threads.md)
+- [Tokio Runtime](./tokio_runtime.md)
 - [MCP integration](./mcp.md)
 - [GitHub CI integration](./github_ci.md)
