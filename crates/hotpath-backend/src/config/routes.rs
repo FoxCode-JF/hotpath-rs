@@ -151,7 +151,7 @@ async fn robots_txt() -> impl IntoResponse {
 async fn sitemap_xml() -> impl IntoResponse {
     let mut urls = vec![];
 
-    let home_lastmod = get_file_lastmod("html/introduction.html").await;
+    let home_lastmod = get_file_lastmod("html_src/src/introduction.md").await;
     urls.push(format_sitemap_url(
         &format!("{}/", BASE_URL),
         home_lastmod,
@@ -160,7 +160,7 @@ async fn sitemap_xml() -> impl IntoResponse {
     ));
 
     for entry in DOC_PAGES {
-        let file_path = format!("html/{}.html", entry.page);
+        let file_path = format!("html_src/src/{}.md", entry.page);
         let lastmod = get_file_lastmod(&file_path).await;
         urls.push(format_sitemap_url(
             &format!("{}/{}", BASE_URL, entry.page),
