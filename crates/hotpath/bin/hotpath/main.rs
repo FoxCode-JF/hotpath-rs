@@ -20,14 +20,17 @@ https://github.com/pawurb/hotpath"
 )]
 pub struct HPArgs {
     #[command(subcommand)]
-    pub cmd: HPSubcommand,
+    pub cmd: Option<HPSubcommand>,
 }
 
 #[hotpath::main(limit = 20)]
 fn main() -> Result<()> {
     let root_args = HPArgs::parse();
 
-    match root_args.cmd {
+    match root_args
+        .cmd
+        .unwrap_or(HPSubcommand::Console(ConsoleArgs::default()))
+    {
         HPSubcommand::Console(args) => {
             args.run()?;
         }

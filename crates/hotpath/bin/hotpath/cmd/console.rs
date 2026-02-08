@@ -88,6 +88,16 @@ fn init_logging() {
 #[cfg(not(feature = "dev"))]
 fn init_logging() {}
 
+impl Default for ConsoleArgs {
+    fn default() -> Self {
+        Self {
+            metrics_port: default_metrics_port(),
+            metrics_host: default_metrics_host(),
+            refresh_interval: 500,
+        }
+    }
+}
+
 fn default_metrics_port() -> u16 {
     std::env::var("HOTPATH_METRICS_PORT")
         .ok()
