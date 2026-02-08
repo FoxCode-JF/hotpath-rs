@@ -43,10 +43,10 @@ First, install `hotpath` CLI with auto-instrumentation enabled:
 cargo install hotpath --features='tui,hotpath,hotpath-alloc'
 ```
 
-Then launch the console:
+Then launch the TUI:
 
 ```bash
-hotpath console
+hotpath 
 ```
 
 and you'll see timing, memory and channel usage metrics.
