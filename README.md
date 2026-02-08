@@ -27,10 +27,11 @@ https://github.com/user-attachments/assets/2e890417-2b43-4b1b-8657-a5ef3b458153
 - **Static reports for one-off programs** - alternatively print profiling summaries without running the TUI.
 - **Memory allocation tracking** - track bytes allocated and allocation counts per function.
 - **Channel and stream monitoring** - instrument channels and streams to track message flow and throughput.
-- **Futures instrumentation** - monitor any async piece of code to track poll counts, lifecycle and resolved values
+- **Futures instrumentation** - monitor any async piece of code to track poll counts, lifecycle and resolved values.
 - **Detailed stats**: avg, total time, call count, % of total runtime, and configurable percentiles (p95, p99, etc.).
-- **Background processing** for minimal profiling impact.
-- **GitHub Actions integration** - configure CI to automatically benchmark your program against a base branch for each PR
+- **Tokio runtime monitoring** - track worker thread utilization, task scheduling, and queue depths.
+- **MCP server for AI agents** - built-in [Model Context Protocol](https://modelcontextprotocol.io/) server that lets LLMs query profiling data in real-time.
+- **GitHub Actions integration** - configure CI to automatically benchmark your program against a base branch for each PR.
 
 ## Quick Demo
 
