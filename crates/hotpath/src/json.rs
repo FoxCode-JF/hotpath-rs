@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use crate::channels::ChannelType;
 pub use crate::output::FunctionLogsList;
 
 /// State of a channel or stream.
@@ -39,14 +40,6 @@ impl std::fmt::Display for ChannelState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
-}
-
-/// Type of a channel.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChannelType {
-    Bounded(usize),
-    Unbounded,
-    Oneshot,
 }
 
 impl std::fmt::Display for ChannelType {

@@ -2,11 +2,11 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::channels::{get_sorted_channel_entries, ChannelEntry, START_TIME};
+use crate::channels::{get_sorted_channel_entries, ChannelEntry, ChannelType, START_TIME};
 use crate::futures::{get_sorted_future_stats, FutureEntry};
 use crate::json::{
-    ChannelType, DataFlowType, JsonChannelEntry, JsonDataFlowEntry, JsonDataFlowList,
-    JsonFutureEntry, JsonStreamEntry,
+    DataFlowType, JsonChannelEntry, JsonDataFlowEntry, JsonDataFlowList, JsonFutureEntry,
+    JsonStreamEntry,
 };
 use crate::streams::{get_sorted_stream_stats, StreamStats};
 

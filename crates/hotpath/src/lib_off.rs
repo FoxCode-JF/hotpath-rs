@@ -248,6 +248,13 @@ pub struct FunctionStats {}
 pub mod channels {
     use super::Format;
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ChannelType {
+        Bounded(usize),
+        Unbounded,
+        Oneshot,
+    }
+
     pub struct ChannelsGuardBuilder;
 
     impl ChannelsGuardBuilder {
