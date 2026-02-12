@@ -46,7 +46,7 @@ hotpath = [
   "dep:libc",
   "dep:mach2",
 ]
-hotpath-meta = ["dep:hotpath-meta", "hotpath-meta/hotpath-meta"]
+hotpath-meta = ["dep:hotpath-meta", "hotpath-meta/hotpath-meta", "hotpath-meta/crossbeam"]
 hotpath-alloc-meta = ["hotpath-meta/hotpath-alloc-meta"]
 hotpath-alloc = ["dep:tokio"]
 hotpath-off = ["hotpath-macros/hotpath-off"]

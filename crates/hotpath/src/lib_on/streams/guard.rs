@@ -33,6 +33,7 @@ pub struct StreamsGuardBuilder {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl StreamsGuardBuilder {
     /// Create a new streams guard builder.
     pub fn new() -> Self {
@@ -102,6 +103,7 @@ pub struct StreamsGuard {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl StreamsGuard {
     /// Create a new streams guard with default settings (table format).
     /// Statistics will be printed when this guard is dropped.

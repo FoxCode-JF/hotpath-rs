@@ -26,6 +26,7 @@ pin_project! {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl<S> InstrumentedStream<S> {
     pub(crate) fn new(stream: S, source: &'static str, label: Option<String>) -> Self
     where
@@ -86,6 +87,7 @@ pin_project! {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl<S> InstrumentedStreamLog<S> {
     pub(crate) fn new(stream: S, source: &'static str, label: Option<String>) -> Self
     where

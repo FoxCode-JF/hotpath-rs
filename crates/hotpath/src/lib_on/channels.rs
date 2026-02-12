@@ -47,6 +47,7 @@ pub enum ChannelType {
 /// a [`RegisteredChannel`] that wrappers use to report subsequent
 /// send/receive/close events. `T` is the message type carried by the channel
 /// and is used to record the type name and per-message byte size.
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 pub fn register_channel<T>(
     source: &'static str,
     label: Option<String>,
@@ -71,6 +72,7 @@ pub fn register_channel<T>(
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn timestamp_nanos(timestamp: Instant) -> u64 {
     let start_time = START_TIME.get().copied().unwrap_or(timestamp);
     timestamp.duration_since(start_time).as_nanos() as u64
@@ -93,6 +95,7 @@ pub(crate) struct ChannelEntry {
     pub(crate) iter: u32,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl ChannelEntry {
     pub fn queued(&self) -> u64 {
         self.sent_count
@@ -133,6 +136,7 @@ impl From<&ChannelEntry> for JsonChannelEntry {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl ChannelEntry {
     fn new(
         id: u64,
@@ -223,6 +227,7 @@ pub(crate) use crate::lib_on::START_TIME;
 
 const DEFAULT_LOG_LIMIT: usize = 50;
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_log_limit() -> usize {
     std::env::var("HOTPATH_LOGS_LIMIT")
         .ok()
@@ -230,6 +235,7 @@ pub(crate) fn get_log_limit() -> usize {
         .unwrap_or(DEFAULT_LOG_LIMIT)
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_channel_event(stats: &mut HashMap<u64, ChannelEntry>, event: ChannelEvent) {
     match event {
         ChannelEvent::Created {
@@ -302,13 +308,29 @@ fn process_channel_event(stats: &mut HashMap<u64, ChannelEntry>, event: ChannelE
 }
 
 /// Initialize the channel statistics collection system (called on first instrumented channel).
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 pub(crate) fn init_channels_state() -> &'static ChannelStatsState {
     CHANNELS_STATE.get_or_init(|| {
         START_TIME.get_or_init(Instant::now);
 
         let (event_tx, event_rx) = unbounded::<ChannelEvent>();
+        #[cfg(feature = "hotpath-meta")]
+        let (event_tx, event_rx) =
+            hotpath_meta::channel!((event_tx, event_rx), label = "hp-ch-events", log = true);
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (shutdown_tx, shutdown_rx) = hotpath_meta::channel!(
+            (shutdown_tx, shutdown_rx),
+            label = "hp-ch-shutdown",
+            log = true
+        );
         let (completion_tx, completion_rx) = bounded::<HashMap<u64, ChannelEntry>>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (completion_tx, completion_rx) = hotpath_meta::channel!(
+            (completion_tx, completion_rx),
+            label = "hp-ch-completion",
+            log = true
+        );
         let stats_map = Arc::new(RwLock::new(HashMap::<u64, ChannelEntry>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
@@ -354,6 +376,7 @@ pub(crate) fn init_channels_state() -> &'static ChannelStatsState {
     })
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn resolve_label(id: &'static str, provided: Option<&str>, iter: Option<u32>) -> String {
     let base_label = if let Some(l) = provided {
         l.to_string()
@@ -371,6 +394,7 @@ pub(crate) fn resolve_label(id: &'static str, provided: Option<&str>, iter: Opti
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn extract_filename(path: &str) -> String {
     let components: Vec<&str> = path.split('/').collect();
     if components.len() >= 2 {
@@ -593,6 +617,7 @@ macro_rules! channel {
     }};
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_all_channel_stats() -> HashMap<u64, ChannelEntry> {
     if let Some(state) = CHANNELS_STATE.get() {
         state.stats_map.read().unwrap().clone()
@@ -603,6 +628,7 @@ fn get_all_channel_stats() -> HashMap<u64, ChannelEntry> {
 
 /// Compare two channel stats for sorting.
 /// Custom labels come first (sorted alphabetically), then auto-generated labels (sorted by source and iter).
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn compare_channel_entries(a: &ChannelEntry, b: &ChannelEntry) -> std::cmp::Ordering {
     let a_has_label = a.label.is_some();
     let b_has_label = b.label.is_some();
@@ -620,12 +646,14 @@ pub(crate) fn compare_channel_entries(a: &ChannelEntry, b: &ChannelEntry) -> std
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_channel_entries() -> Vec<ChannelEntry> {
     let mut stats: Vec<ChannelEntry> = get_all_channel_stats().into_values().collect();
     stats.sort_by(compare_channel_entries);
     stats
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_channels_json() -> JsonChannelsList {
     let channels = get_sorted_channel_entries()
         .iter()
@@ -644,6 +672,7 @@ pub fn get_channels_json() -> JsonChannelsList {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_channel_logs(channel_id: &str) -> Option<ChannelLogs> {
     let id = channel_id.parse::<u64>().ok()?;
     let stats = get_all_channel_stats();

@@ -27,6 +27,7 @@ cfg_if::cfg_if! {
 
 pub(crate) use crate::output::truncate_result;
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 #[inline]
 pub(crate) fn is_exclude_wrapper_enabled() -> bool {
     std::env::var("HOTPATH_EXCLUDE_WRAPPER")
@@ -34,6 +35,7 @@ pub(crate) fn is_exclude_wrapper_enabled() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl MeasurementGuard {
     pub fn build(measurement_name: &'static str, wrapper: bool, _is_async: bool) -> Self {
         #[allow(clippy::needless_bool)]
@@ -63,6 +65,7 @@ impl MeasurementGuard {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl MeasurementGuardWithLog {
     pub fn build(measurement_name: &'static str, wrapper: bool, _is_async: bool) -> Self {
         #[allow(clippy::needless_bool)]
@@ -92,7 +95,7 @@ impl MeasurementGuardWithLog {
 /// Measure a sync function and log its return value.
 #[doc(hidden)]
 #[inline]
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn measure_with_log<T: std::fmt::Debug, F: FnOnce() -> T>(
     name: &'static str,
     wrapper: bool,
@@ -107,7 +110,7 @@ pub fn measure_with_log<T: std::fmt::Debug, F: FnOnce() -> T>(
 
 /// Measure an async function and log its return value.
 #[doc(hidden)]
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub async fn measure_with_log_async<T: std::fmt::Debug, F, Fut>(name: &'static str, f: F) -> T
 where
     F: FnOnce() -> Fut,
@@ -125,6 +128,7 @@ pub(crate) static FUNCTIONS_STATE: OnceLock<ArcSwapOption<RwLock<FunctionsState>
 pub mod guard;
 
 /// Query request sent from TUI HTTP server to profiler worker thread
+#[derive(Debug)]
 pub(crate) enum FunctionsQuery {
     /// Request timing metrics snapshot
     Timing(Sender<JsonFunctionsList>),
@@ -142,6 +146,7 @@ pub(crate) enum FunctionsQuery {
     },
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_current_elapsed_ns() -> u64 {
     START_TIME
         .get()
@@ -172,6 +177,7 @@ where
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_functions_timing_json() -> JsonFunctionsList {
     if let Some(formatted) = query_functions_state(FunctionsQuery::Timing) {
         return formatted;
@@ -180,6 +186,7 @@ pub(crate) fn get_functions_timing_json() -> JsonFunctionsList {
     JsonFunctionsList::empty_fallback(get_current_elapsed_ns())
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_function_logs_timing(function_name: &str) -> Option<FunctionLogsList> {
     let name = function_name.to_string();
     query_functions_state(|response_tx| FunctionsQuery::LogsTiming {
@@ -189,12 +196,14 @@ pub(crate) fn get_function_logs_timing(function_name: &str) -> Option<FunctionLo
     .flatten()
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_functions_alloc_json() -> Option<JsonFunctionsList> {
     query_functions_state(FunctionsQuery::Alloc).flatten()
 }
 
 // Get instrumented function calls information
 // Will return None unless hotpath-alloc is enabled
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_function_logs_alloc(function_name: &str) -> Option<FunctionLogsList> {
     let name = function_name.to_string();
     query_functions_state(|response_tx| FunctionsQuery::LogsAlloc {

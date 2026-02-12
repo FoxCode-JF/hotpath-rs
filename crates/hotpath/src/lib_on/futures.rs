@@ -33,6 +33,7 @@ static SOURCE_TO_FUTURE_ID: LazyLock<RwLock<HashMap<&'static str, u64>>> =
 
 /// Get or create a future_id for a source location.
 /// Returns (future_id, is_new) where is_new indicates if this is a newly created future.
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_or_create_future_id(source: &'static str) -> (u64, bool) {
     let map = &*SOURCE_TO_FUTURE_ID;
 
@@ -64,6 +65,7 @@ pub struct FutureEntry {
     pub logs_count: u64,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl FutureEntry {
     fn new(id: u64, source: &'static str, label: Option<String>) -> Self {
         Self {
@@ -149,6 +151,7 @@ pub(crate) static FUTURES_STATE: OnceLock<FuturesStatsState> = OnceLock::new();
 
 /// Initialize the futures event collection system (called on first instrumented future).
 #[doc(hidden)]
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn init_futures_state() {
     FUTURES_STATE.get_or_init(|| {
         START_TIME.get_or_init(Instant::now);
@@ -156,8 +159,23 @@ pub fn init_futures_state() {
         crate::metrics_server::start_metrics_server_once(*METRICS_SERVER_PORT);
 
         let (event_tx, event_rx) = unbounded::<FutureEvent>();
+        #[cfg(feature = "hotpath-meta")]
+        let (event_tx, event_rx) =
+            hotpath_meta::channel!((event_tx, event_rx), label = "hp-ft-events", log = true);
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (shutdown_tx, shutdown_rx) = hotpath_meta::channel!(
+            (shutdown_tx, shutdown_rx),
+            label = "hp-ft-shutdown",
+            log = true
+        );
         let (completion_tx, completion_rx) = bounded::<HashMap<u64, FutureEntry>>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (completion_tx, completion_rx) = hotpath_meta::channel!(
+            (completion_tx, completion_rx),
+            label = "hp-ft-completion",
+            log = true
+        );
         let stats_map = Arc::new(RwLock::new(HashMap::<u64, FutureEntry>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
@@ -202,6 +220,7 @@ pub fn init_futures_state() {
 }
 
 /// Process a future event and update stats.
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_future_event(stats_map: &mut HashMap<u64, FutureEntry>, event: FutureEvent) {
     match event {
         FutureEvent::Created {
@@ -269,6 +288,7 @@ fn process_future_event(stats_map: &mut HashMap<u64, FutureEntry>, event: Future
 }
 
 /// Send a future event to the background thread.
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn send_future_event(event: FutureEvent) {
     if let Some(state) = FUTURES_STATE.get() {
         let _ = state.event_tx.send(event);
@@ -314,6 +334,7 @@ where
 
 /// Compare two future stats for sorting.
 /// Custom labels come first (sorted alphabetically), then auto-generated labels (sorted by source).
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn compare_future_stats(a: &FutureEntry, b: &FutureEntry) -> std::cmp::Ordering {
     let a_has_label = a.label.is_some();
     let b_has_label = b.label.is_some();
@@ -326,6 +347,7 @@ pub(crate) fn compare_future_stats(a: &FutureEntry, b: &FutureEntry) -> std::cmp
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_all_future_stats() -> HashMap<u64, FutureEntry> {
     if let Some(state) = FUTURES_STATE.get() {
         state.stats_map.read().unwrap().clone()
@@ -334,12 +356,14 @@ fn get_all_future_stats() -> HashMap<u64, FutureEntry> {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_future_stats() -> Vec<FutureEntry> {
     let mut stats: Vec<FutureEntry> = get_all_future_stats().into_values().collect();
     stats.sort_by(compare_future_stats);
     stats
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_futures_json() -> JsonFuturesList {
     let futures = get_sorted_future_stats()
         .iter()
@@ -357,6 +381,7 @@ pub fn get_futures_json() -> JsonFuturesList {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_future_logs_list(future_id: u64) -> Option<FutureLogsList> {
     let stats = get_all_future_stats();
     stats.get(&future_id).map(|s| FutureLogsList {

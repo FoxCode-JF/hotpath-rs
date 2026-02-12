@@ -12,10 +12,12 @@ use crate::streams::{get_sorted_stream_stats, StreamStats};
 
 pub static DATA_FLOW_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn next_data_flow_id() -> u64 {
     DATA_FLOW_ID_COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn format_queue(channel_type: &ChannelType, queued: u64) -> Option<String> {
     match channel_type {
         ChannelType::Unbounded => None,
@@ -96,6 +98,7 @@ impl From<&FutureEntry> for JsonDataFlowEntry {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_data_flow_json() -> JsonDataFlowList {
     let mut entries: Vec<JsonDataFlowEntry> = Vec::new();
 

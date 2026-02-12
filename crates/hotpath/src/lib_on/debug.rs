@@ -12,6 +12,7 @@ pub static DEBUG_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 static VAL_ID_REGISTRY: OnceLock<RwLock<HashMap<String, u64>>> = OnceLock::new();
 static GAUGE_ID_REGISTRY: OnceLock<RwLock<HashMap<String, u64>>> = OnceLock::new();
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_or_create_val_id(key: &str) -> u64 {
     let registry = VAL_ID_REGISTRY.get_or_init(|| RwLock::new(HashMap::new()));
     if let Some(&id) = registry.read().unwrap().get(key) {
@@ -23,6 +24,7 @@ pub(crate) fn get_or_create_val_id(key: &str) -> u64 {
         .or_insert_with(|| DEBUG_ID_COUNTER.fetch_add(1, Ordering::Relaxed))
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_or_create_gauge_id(key: &str) -> u64 {
     let registry = GAUGE_ID_REGISTRY.get_or_init(|| RwLock::new(HashMap::new()));
     if let Some(&id) = registry.read().unwrap().get(key) {
@@ -160,6 +162,7 @@ struct DebugState {
 
 static DEBUG_STATE: OnceLock<DebugState> = OnceLock::new();
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn init_debug_state() {
     DEBUG_STATE.get_or_init(|| {
         START_TIME.get_or_init(Instant::now);
@@ -167,6 +170,9 @@ pub(crate) fn init_debug_state() {
         crate::metrics_server::start_metrics_server_once(*METRICS_SERVER_PORT);
 
         let (event_tx, event_rx) = unbounded::<DebugEvent>();
+        #[cfg(feature = "hotpath-meta")]
+        let (event_tx, event_rx) =
+            hotpath_meta::channel!((event_tx, event_rx), label = "hp-dbg-events", log = true);
         let dbg = Arc::new(RwLock::new(HashMap::<u64, DbgEntry>::new()));
         let val = Arc::new(RwLock::new(HashMap::<u64, ValEntry>::new()));
         let gauge = Arc::new(RwLock::new(HashMap::<u64, GaugeEntry>::new()));
@@ -207,11 +213,13 @@ pub(crate) fn init_debug_state() {
     });
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn timestamp_nanos(timestamp: Instant) -> u64 {
     let start_time = START_TIME.get().copied().unwrap_or(timestamp);
     timestamp.duration_since(start_time).as_nanos() as u64
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_dbg_event(stats_map: &mut HashMap<u64, DbgEntry>, event: DebugEvent) {
     let DebugEvent::Dbg {
         id,
@@ -245,6 +253,7 @@ fn process_dbg_event(stats_map: &mut HashMap<u64, DbgEntry>, event: DebugEvent) 
     stats.logs.push_back(entry);
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_val_event(stats_map: &mut HashMap<u64, ValEntry>, event: DebugEvent) {
     let DebugEvent::Val {
         id,
@@ -279,6 +288,7 @@ fn process_val_event(stats_map: &mut HashMap<u64, ValEntry>, event: DebugEvent) 
     stats.logs.push_back(entry);
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_gauge_event(stats_map: &mut HashMap<u64, GaugeEntry>, event: DebugEvent) {
     let (id, key, source, new_value, timestamp, tid) = match event {
         DebugEvent::Gauge {
@@ -337,12 +347,14 @@ fn process_gauge_event(stats_map: &mut HashMap<u64, GaugeEntry>, event: DebugEve
     stats.logs.push_back(entry);
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn send_debug_event(event: DebugEvent) {
     if let Some(state) = DEBUG_STATE.get() {
         let _ = state.event_tx.send(event);
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_debug_dbg_entries() -> Vec<DbgEntry> {
     let mut stats: Vec<DbgEntry> = get_all_debug_dbg_entries().into_values().collect();
     stats.sort_by(|a, b| a.source.cmp(b.source).then(a.expression.cmp(b.expression)));
@@ -357,6 +369,7 @@ fn get_all_debug_dbg_entries() -> HashMap<u64, DbgEntry> {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_debug_val_entries() -> Vec<ValEntry> {
     let mut stats: Vec<ValEntry> = get_all_debug_val_entries().into_values().collect();
     stats.sort_by(|a, b| a.key.cmp(&b.key));
@@ -385,6 +398,7 @@ pub(crate) fn get_debug_val_entries_by_id(id: u64) -> Option<ValEntry> {
         .and_then(|map| map.get(&id).cloned())
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_debug_gauge_entries() -> Vec<GaugeEntry> {
     let mut stats: Vec<GaugeEntry> = get_all_debug_gauge_entries().into_values().collect();
     stats.sort_by(|a, b| a.key.cmp(&b.key));

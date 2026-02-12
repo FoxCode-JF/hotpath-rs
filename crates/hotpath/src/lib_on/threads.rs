@@ -17,6 +17,7 @@ pub use crate::json::ThreadMetrics;
 use crate::json::{format_bytes_signed, JsonThreadEntry, JsonThreadsList};
 use crate::output::format_bytes;
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn thread_metrics_with_percentage(
     mut metrics: ThreadMetrics,
     prev: Option<&ThreadMetrics>,
@@ -54,6 +55,7 @@ const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 1000;
 
 // Initialize thread monitoring worker
 // Call it unless you use channel!, stream!, or #[hotpath::main] macro elsewhere in the code
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn init_threads_monitoring() {
     THREADS_STATE.get_or_init(|| {
         let sample_interval_ms = std::env::var("HOTPATH_THREADS_INTERVAL")
@@ -85,6 +87,7 @@ pub fn init_threads_monitoring() {
     });
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn collector_loop(state: ThreadsStateRef, interval: Duration) {
     loop {
@@ -151,6 +154,7 @@ fn get_rss_bytes() -> Option<u64> {
 }
 
 /// Get current thread metrics as JSON
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_threads_json() -> JsonThreadsList {
     let rss_bytes = get_rss_bytes();
 

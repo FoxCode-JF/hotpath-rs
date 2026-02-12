@@ -33,6 +33,7 @@ pub struct FuturesGuardBuilder {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl FuturesGuardBuilder {
     /// Create a new futures guard builder.
     pub fn new() -> Self {
@@ -103,6 +104,7 @@ pub struct FuturesGuard {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl FuturesGuard {
     /// Create a new futures guard with default settings (table format).
     /// Statistics will be printed when this guard is dropped.

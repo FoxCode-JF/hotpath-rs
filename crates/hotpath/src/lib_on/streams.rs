@@ -35,6 +35,7 @@ pub(crate) struct StreamStats {
     pub(crate) iter: u32,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl StreamStats {
     fn new(
         id: u64,
@@ -107,6 +108,7 @@ pub(crate) type StreamStatsState = StreamsState;
 
 pub(crate) static STREAMS_STATE: OnceLock<StreamStatsState> = OnceLock::new();
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_stream_event(stats: &mut HashMap<u64, StreamStats>, event: StreamEvent) {
     match event {
         StreamEvent::Created {
@@ -148,13 +150,29 @@ fn process_stream_event(stats: &mut HashMap<u64, StreamStats>, event: StreamEven
 
 /// Initialize the stream statistics collection system (called on first instrumented stream).
 /// Returns a reference to the global state.
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 pub(crate) fn init_streams_state() -> &'static StreamStatsState {
     STREAMS_STATE.get_or_init(|| {
         crate::lib_on::START_TIME.get_or_init(Instant::now);
 
         let (event_tx, event_rx) = unbounded::<StreamEvent>();
+        #[cfg(feature = "hotpath-meta")]
+        let (event_tx, event_rx) =
+            hotpath_meta::channel!((event_tx, event_rx), label = "hp-st-events", log = true);
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (shutdown_tx, shutdown_rx) = hotpath_meta::channel!(
+            (shutdown_tx, shutdown_rx),
+            label = "hp-st-shutdown",
+            log = true
+        );
         let (completion_tx, completion_rx) = bounded::<HashMap<u64, StreamStats>>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (completion_tx, completion_rx) = hotpath_meta::channel!(
+            (completion_tx, completion_rx),
+            label = "hp-st-completion",
+            log = true
+        );
         let stats_map = Arc::new(RwLock::new(HashMap::<u64, StreamStats>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
@@ -301,6 +319,7 @@ macro_rules! stream {
     }};
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_all_stream_stats() -> HashMap<u64, StreamStats> {
     if let Some(state) = STREAMS_STATE.get() {
         state.stats_map.read().unwrap().clone()
@@ -311,6 +330,7 @@ fn get_all_stream_stats() -> HashMap<u64, StreamStats> {
 
 /// Compare two stream stats for sorting.
 /// Custom labels come first (sorted alphabetically), then auto-generated labels (sorted by source and iter).
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn compare_stream_stats(a: &StreamStats, b: &StreamStats) -> std::cmp::Ordering {
     let a_has_label = a.label.is_some();
     let b_has_label = b.label.is_some();
@@ -328,12 +348,14 @@ pub(crate) fn compare_stream_stats(a: &StreamStats, b: &StreamStats) -> std::cmp
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn get_sorted_stream_stats() -> Vec<StreamStats> {
     let mut stats: Vec<StreamStats> = get_all_stream_stats().into_values().collect();
     stats.sort_by(compare_stream_stats);
     stats
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_streams_json() -> JsonStreamsList {
     let streams = get_sorted_stream_stats()
         .iter()
@@ -352,6 +374,7 @@ pub fn get_streams_json() -> JsonStreamsList {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_stream_logs(stream_id: &str) -> Option<StreamLogs> {
     let id = stream_id.parse::<u64>().ok()?;
     let stats = get_all_stream_stats();

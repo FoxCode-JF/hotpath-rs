@@ -39,6 +39,7 @@ pub struct GaugeLog {
     pub tid: Option<u64>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl GaugeEntry {
     pub fn new(id: u64, key: String, source: &'static str, initial_value: f64) -> Self {
         Self {
@@ -60,6 +61,7 @@ pub struct GaugeHandle {
     source: &'static str,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl GaugeHandle {
     #[inline]
     pub fn new(key: impl Into<String>, source: &'static str) -> Self {
@@ -118,6 +120,7 @@ impl GaugeHandle {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_debug_gauge_entries_json() -> Vec<JsonDebugEntry> {
     crate::debug::get_sorted_debug_gauge_entries()
         .iter()
@@ -125,6 +128,7 @@ pub fn get_debug_gauge_entries_json() -> Vec<JsonDebugEntry> {
         .collect()
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_debug_gauge_logs(id: u64) -> Option<JsonDebugGaugeLogs> {
     let current_elapsed_ns = START_TIME
         .get()
@@ -159,6 +163,7 @@ impl From<&GaugeEntry> for JsonDebugEntry {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl JsonDebugGaugeLogs {
     pub fn from_stats(stats: &GaugeEntry, current_elapsed_ns: u64) -> Self {
         JsonDebugGaugeLogs {

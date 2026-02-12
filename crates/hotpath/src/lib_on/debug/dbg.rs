@@ -21,6 +21,7 @@ fn get_thread_id() -> Option<u64> {
 }
 
 #[doc(hidden)]
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 #[inline]
 pub fn log_dbg<T: Debug>(id: u64, source: &'static str, expression: &'static str, value: &T) {
     init_debug_state();
@@ -39,6 +40,7 @@ pub fn log_dbg<T: Debug>(id: u64, source: &'static str, expression: &'static str
     });
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_debug_entries_json() -> JsonDebugList {
     let dbg_stats = get_sorted_debug_dbg_entries();
     let val_stats = get_sorted_debug_val_entries();
@@ -67,6 +69,7 @@ pub fn get_debug_entries_json() -> JsonDebugList {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_dbg_logs(id: u64) -> Option<JsonDebugDbgLogs> {
     let current_elapsed_ns = START_TIME
         .get()
@@ -102,6 +105,7 @@ impl From<&DbgEntry> for JsonDebugEntry {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl JsonDebugDbgLogs {
     pub fn from_stats(stats: &DbgEntry, current_elapsed_ns: u64) -> Self {
         JsonDebugDbgLogs {

@@ -39,6 +39,7 @@ use tiny_http::{Header, Request, Response, Server};
 
 static HTTP_SERVER_STARTED: OnceLock<()> = OnceLock::new();
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn start_metrics_server_once(port: u16) {
     if *METRICS_SERVER_DISABLED {
         return;
@@ -48,6 +49,7 @@ pub(crate) fn start_metrics_server_once(port: u16) {
     });
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn start_metrics_server(port: u16) {
     #[cfg(feature = "threads")]
     crate::threads::init_threads_monitoring();
@@ -73,6 +75,7 @@ fn start_metrics_server(port: u16) {
             .expect("Failed to spawn HTTP metrics server thread");
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn handle_request(request: Request) {
     let path = request.url();
 
@@ -196,6 +199,7 @@ fn handle_request(request: Request) {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_current_elapsed_ns() -> u64 {
     START_TIME
         .get()
@@ -203,6 +207,7 @@ fn get_current_elapsed_ns() -> u64 {
         .unwrap_or(0)
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn respond_json<T: Serialize>(request: Request, value: &T) {
     match serde_json::to_vec(value) {
         Ok(body) => {
@@ -217,6 +222,7 @@ fn respond_json<T: Serialize>(request: Request, value: &T) {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn respond_error(request: Request, code: u16, msg: &str) {
     let body = format!(r#"{{"error":"{}"}}"#, msg);
     let mut response = Response::from_string(body).with_status_code(code);

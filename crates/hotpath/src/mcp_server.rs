@@ -70,6 +70,7 @@ pub struct HotPathMcpServer {
     tool_router: ToolRouter<Self>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 #[tool_router]
 impl HotPathMcpServer {
     pub fn new() -> Self {
@@ -372,6 +373,7 @@ Returns JSON array of recent value updates with timestamps. Use gauges first to 
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn get_current_elapsed_ns() -> u64 {
     START_TIME
         .get()
@@ -400,6 +402,7 @@ impl ServerHandler for HotPathMcpServer {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn to_json<T: serde::Serialize>(value: &T) -> Result<String, McpError> {
     serde_json::to_string(value)
         .map_err(|e| McpError::internal_error(format!("Failed to serialize metrics: {}", e), None))
@@ -445,6 +448,7 @@ async fn auth_middleware(
 
 static MCP_SERVER_STARTED: OnceLock<()> = OnceLock::new();
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn start_mcp_server_once() {
     MCP_SERVER_STARTED.get_or_init(|| {
         let port = *MCP_SERVER_PORT;

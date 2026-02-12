@@ -44,6 +44,7 @@ impl FromStr for Format {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl Format {
     /// Returns the format from `HOTPATH_OUTPUT_FORMAT` env var, or default if not set.
     /// Panics if the env var contains an invalid value.

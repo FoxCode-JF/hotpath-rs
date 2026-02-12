@@ -32,6 +32,7 @@ pub struct ChannelsGuardBuilder {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl ChannelsGuardBuilder {
     /// Create a new channels guard builder.
     pub fn new() -> Self {
@@ -101,6 +102,7 @@ pub struct ChannelsGuard {
     output_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl ChannelsGuard {
     /// Create a new channels guard with default settings (table format).
     /// Statistics will be printed when this guard is dropped.

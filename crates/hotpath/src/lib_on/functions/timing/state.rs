@@ -97,6 +97,7 @@ pub(crate) fn flush_batch() {
     });
 }
 
+#[derive(Debug)]
 pub struct Measurement {
     pub duration_ns: u64,
     pub measurement_time: Instant,

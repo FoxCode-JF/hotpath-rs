@@ -310,7 +310,6 @@ pub struct FunctionsGuard {
     wrapper_guard: Option<MeasurementGuard>,
     output_path: Option<PathBuf>,
 }
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl FunctionsGuard {
     pub fn new(
         caller_name: &'static str,
@@ -339,9 +338,26 @@ impl FunctionsGuard {
         }
 
         let (tx, rx) = unbounded::<Measurement>();
+        #[cfg(feature = "hotpath-meta")]
+        let (tx, rx) = hotpath_meta::channel!((tx, rx), label = "hp-fn-measurements", log = true);
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (shutdown_tx, shutdown_rx) = hotpath_meta::channel!(
+            (shutdown_tx, shutdown_rx),
+            label = "hp-fn-shutdown",
+            log = true
+        );
         let (completion_tx, completion_rx) = bounded::<HashMap<&'static str, FunctionStats>>(1);
+        #[cfg(feature = "hotpath-meta")]
+        let (completion_tx, completion_rx) = hotpath_meta::channel!(
+            (completion_tx, completion_rx),
+            label = "hp-fn-completion",
+            log = true
+        );
         let (query_tx, query_rx) = unbounded::<FunctionsQuery>();
+        #[cfg(feature = "hotpath-meta")]
+        let (query_tx, query_rx) =
+            hotpath_meta::channel!((query_tx, query_rx), label = "hp-fn-queries", log = true);
         let start_time = Instant::now();
 
         let state_arc = Arc::new(RwLock::new(FunctionsState {
@@ -365,7 +381,7 @@ impl FunctionsGuard {
             .name("hp-functions".into())
             .spawn(move || {
                 #[cfg(feature = "hotpath-meta")]
-                let _guard = hotpath_meta::FunctionsGuardBuilder::new("functions-worker").build();
+                let _guard = hotpath_meta::FunctionsGuardBuilder::new("functions-worker").limit(30).build();
 
                 let mut local_stats = HashMap::<&'static str, FunctionStats>::new();
 

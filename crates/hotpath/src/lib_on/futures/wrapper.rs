@@ -78,6 +78,7 @@ pin_project! {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl<F: Future> InstrumentedFuture<F> {
     /// Create a new instrumented future.
     pub fn new(inner: F, location: &'static str) -> Self {
@@ -165,6 +166,7 @@ pin_project! {
     }
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]
 impl<F: Future> InstrumentedFutureLog<F> {
     /// Create a new instrumented future with logging.
     pub fn new(inner: F, location: &'static str) -> Self {
