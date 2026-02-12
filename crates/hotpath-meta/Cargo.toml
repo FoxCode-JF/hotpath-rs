@@ -1,32 +1,17 @@
 [package]
-name = "hotpath"
-version = "0.10.1"
+name = "hotpath-meta"
+version = "0.10.3"
 edition = "2021"
 repository = "https://github.com/pawurb/hotpath-rs"
-description = "Simple async Rust profiler with memory and data-flow insights - quickly find and debug performance bottlenecks."
+description = "Hotpath meta - a version of hotpath used to profile the profiler itself. Not intended for external use."
 readme = "../../README.md"
 license = "MIT"
 categories = ["development-tools"]
 
-[[bin]]
-name = "hotpath"
-path = "bin/hotpath/main.rs"
-required-features = ["tui"]
-
-[[bin]]
-name = "hotpath-ci"
-path = "bin/hotpath-ci/main.rs"
-required-features = ["ci"]
-
-[[bin]]
-name = "hotpath-crashtest"
-path = "bin/hotpath-crashtest/main.rs"
-required-features = ["tui", "hotpath", "hotpath-alloc"]
-
 [features]
 default = ["threads"]
-hotpath = [
-  "hotpath-macros/hotpath",
+hotpath-meta = [
+  "hotpath-macros-meta/hotpath-meta",
   "dep:arc-swap",
   "dep:base64",
   "dep:cfg-if",
@@ -46,10 +31,8 @@ hotpath = [
   "dep:libc",
   "dep:mach2",
 ]
-hotpath-meta = ["dep:hotpath-meta", "hotpath-meta/hotpath-meta"]
-hotpath-alloc-meta = ["hotpath-meta/hotpath-alloc-meta"]
-hotpath-alloc = ["dep:tokio"]
-hotpath-off = ["hotpath-macros/hotpath-off"]
+hotpath-alloc-meta = ["dep:tokio"]
+hotpath-off-meta = ["hotpath-macros-meta/hotpath-off-meta"]
 ci = ["dep:serde", "dep:serde_json", "dep:eyre", "dep:clap", "dep:prettytable-rs", "dep:ureq", "dep:base64", "dep:regex"]
 tui = ["dep:serde", "dep:serde_json", "dep:eyre", "dep:clap", "dep:prettytable-rs", "dep:reqwest", "dep:crossterm", "dep:ratatui", "dep:chrono", "dep:base64", "dep:regex", "dep:crossbeam-channel", "dep:tokio", "tokio/rt", "dep:tracing", "dep:tracing-subscriber", "dep:time", "crossbeam"]
 tokio = ["dep:tokio", "tokio/sync", "tokio/macros", "tokio/time", "tokio/rt-multi-thread"]
@@ -57,7 +40,7 @@ futures = ["dep:tokio", "tokio/sync", "tokio/macros", "tokio/time", "tokio/rt-mu
 crossbeam = []
 threads = []
 dev = ["dep:chrono"]
-hotpath-mcp = ["hotpath", "dep:rmcp", "dep:tokio", "tokio/rt", "tokio/net", "dep:axum", "dep:tokio-util", "dep:chrono", "dep:schemars"]
+hotpath-meta-mcp = ["hotpath-meta", "dep:rmcp", "dep:tokio", "tokio/rt", "tokio/net", "dep:axum", "dep:tokio-util", "dep:chrono", "dep:schemars"]
 
 [dependencies]
 arc-swap = { version = "1.7", optional = true }
@@ -69,7 +52,7 @@ crossbeam-channel = { version = "0.5", optional = true }
 crossterm = { version = "0.29", optional = true }
 eyre = { version = "0.6", optional = true }
 hdrhistogram = { version = "7.5", default-features = false, optional = true }
-hotpath-macros = { workspace = true }
+hotpath-macros-meta = { workspace = true }
 prettytable-rs = { version = "0.10", default-features = false, optional = true }
 quanta = { version = "0.12", optional = true }
 ratatui = { version = "0.29", optional = true }
@@ -92,7 +75,6 @@ rmcp = { version = "0.13", features = ["server", "transport-streamable-http-serv
 schemars = { version = "1", optional = true }
 axum = { version = "0.8", optional = true }
 tokio-util = { version = "0.7", optional = true }
-hotpath-meta = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 mach2 = { version = "0.6", optional = true }
@@ -104,4 +86,3 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
 serde_json = "1.0"
 ureq = { version = "3.1", features = ["json"] }
 base64 = "0.22"
-

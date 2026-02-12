@@ -44,6 +44,9 @@ jobs:
       - name: Check hotpath-mcp
         run: |
           cargo check --features "hotpath,hotpath-mcp"
+      - name: Check hotpath-meta
+        run: |
+          cargo check --features "hotpath,hotpath-alloc-meta,hotpath-meta"
       - name: Fmt
         if: matrix.rust == 'stable'
         run: |

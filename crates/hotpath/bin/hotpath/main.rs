@@ -16,7 +16,7 @@ pub enum HPSubcommand {
     about,
     long_about = "hotpath CLI: automatically profile Rust programs on each Pull Request
 
-https://github.com/pawurb/hotpath"
+https://github.com/pawurb/hotpath-rs"
 )]
 pub struct HPArgs {
     #[command(subcommand)]
