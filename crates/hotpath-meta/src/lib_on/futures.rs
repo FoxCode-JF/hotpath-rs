@@ -140,7 +140,7 @@ pub(crate) struct FuturesState {
     pub(crate) event_tx: CbSender<FutureEvent>,
     pub(crate) stats_map: Arc<RwLock<HashMap<u64, FutureEntry>>>,
     pub(crate) shutdown_tx: Mutex<Option<CbSender<()>>>,
-    pub(crate) completion_rx: Mutex<Option<CbReceiver<HashMap<u64, FutureEntry>>>>,
+    pub(crate) completion_rx: Mutex<Option<CbReceiver<()>>>,
 }
 
 pub(crate) type FuturesStatsState = FuturesState;
@@ -157,38 +157,37 @@ pub fn init_futures_state() {
 
         let (event_tx, event_rx) = unbounded::<FutureEvent>();
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
-        let (completion_tx, completion_rx) = bounded::<HashMap<u64, FutureEntry>>(1);
+        let (completion_tx, completion_rx) = bounded::<()>(1);
         let stats_map = Arc::new(RwLock::new(HashMap::<u64, FutureEntry>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
         std::thread::Builder::new()
             .name("hp-meta-futures".into())
             .spawn(move || {
-                let mut local_stats = HashMap::<u64, FutureEntry>::new();
-
                 loop {
                     select! {
                         recv(event_rx) -> result => {
                             match result {
                                 Ok(event) => {
-                                    process_future_event(&mut local_stats, event);
                                     if let Ok(mut shared) = stats_map_clone.write() {
-                                        *shared = local_stats.clone();
+                                        process_future_event(&mut shared, event);
                                     }
                                 }
                                 Err(_) => break,
                             }
                         }
                         recv(shutdown_rx) -> _ => {
-                            while let Ok(event) = event_rx.try_recv() {
-                                process_future_event(&mut local_stats, event);
+                            if let Ok(mut shared) = stats_map_clone.write() {
+                                while let Ok(event) = event_rx.try_recv() {
+                                    process_future_event(&mut shared, event);
+                                }
                             }
                             break;
                         }
                     }
                 }
 
-                let _ = completion_tx.send(local_stats);
+                let _ = completion_tx.send(());
             })
             .expect("Failed to spawn futures event collector thread");
 

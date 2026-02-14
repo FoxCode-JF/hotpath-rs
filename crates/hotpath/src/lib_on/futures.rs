@@ -142,7 +142,7 @@ pub(crate) struct FuturesState {
     pub(crate) event_tx: CbSender<FutureEvent>,
     pub(crate) stats_map: Arc<RwLock<HashMap<u64, FutureEntry>>>,
     pub(crate) shutdown_tx: Mutex<Option<CbSender<()>>>,
-    pub(crate) completion_rx: Mutex<Option<CbReceiver<HashMap<u64, FutureEntry>>>>,
+    pub(crate) completion_rx: Mutex<Option<CbReceiver<()>>>,
 }
 
 pub(crate) type FuturesStatsState = FuturesState;
@@ -169,7 +169,7 @@ pub fn init_futures_state() {
             label = "hp-ft-shutdown",
             log = true
         );
-        let (completion_tx, completion_rx) = bounded::<HashMap<u64, FutureEntry>>(1);
+        let (completion_tx, completion_rx) = bounded::<()>(1);
         #[cfg(feature = "hotpath-meta")]
         let (completion_tx, completion_rx) = hotpath_meta::channel!(
             (completion_tx, completion_rx),
@@ -182,32 +182,30 @@ pub fn init_futures_state() {
         std::thread::Builder::new()
             .name("hp-futures".into())
             .spawn(move || {
-                let mut local_stats = HashMap::<u64, FutureEntry>::new();
-
                 loop {
                     select! {
                         recv(event_rx) -> result => {
                             match result {
                                 Ok(event) => {
-                                    process_and_sync_future_event(
-                                        &mut local_stats,
-                                        &stats_map_clone,
-                                        event,
-                                    );
+                                    if let Ok(mut shared) = stats_map_clone.write() {
+                                        process_future_event(&mut shared, event);
+                                    }
                                 }
                                 Err(_) => break,
                             }
                         }
                         recv(shutdown_rx) -> _ => {
-                            while let Ok(event) = event_rx.try_recv() {
-                                process_future_event(&mut local_stats, event);
+                            if let Ok(mut shared) = stats_map_clone.write() {
+                                while let Ok(event) = event_rx.try_recv() {
+                                    process_future_event(&mut shared, event);
+                                }
                             }
                             break;
                         }
                     }
                 }
 
-                let _ = completion_tx.send(local_stats);
+                let _ = completion_tx.send(());
             })
             .expect("Failed to spawn futures event collector thread");
 
@@ -285,18 +283,6 @@ fn process_future_event(stats_map: &mut HashMap<u64, FutureEntry>, event: Future
                 }
             }
         }
-    }
-}
-
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
-fn process_and_sync_future_event(
-    local_stats: &mut HashMap<u64, FutureEntry>,
-    stats_map: &Arc<RwLock<HashMap<u64, FutureEntry>>>,
-    event: FutureEvent,
-) {
-    process_future_event(local_stats, event);
-    if let Ok(mut shared) = stats_map.write() {
-        *shared = local_stats.clone();
     }
 }
 
