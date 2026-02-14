@@ -27,6 +27,9 @@ pub(crate) static METRICS_SERVER_DISABLED: LazyLock<bool> = LazyLock::new(|| {
 
 pub(crate) static RECV_TIMEOUT_MS: u64 = 250;
 
+const TOKIO_RUNTIME_HINT: &str =
+    "Tokio runtime metrics not available - use hotpath::tokio_runtime!() to start collection";
+
 use crate::channels::get_channel_logs;
 use crate::data_flow::get_data_flow_json;
 use crate::futures::get_future_logs_list;
@@ -178,22 +181,14 @@ fn handle_request(request: Request) {
                 "Thread monitoring not available - enable threads feature",
             );
         }
-        #[cfg(feature = "tokio")]
-        Ok(Route::TokioRuntime) => match crate::tokio_runtime::get_runtime_json() {
-            Some(snapshot) => respond_json(request, &snapshot),
-            None => respond_error(
-                request,
-                404,
-                "No runtime metrics detected, use hotpath::tokio_runtime!() to enable",
-            ),
-        },
-        #[cfg(not(feature = "tokio"))]
         Ok(Route::TokioRuntime) => {
-            respond_error(
-                request,
-                404,
-                "Tokio runtime not available - enable the tokio feature flag",
-            );
+            #[cfg(feature = "tokio")]
+            match crate::tokio_runtime::get_runtime_json() {
+                Some(snapshot) => respond_json(request, &snapshot),
+                None => respond_error(request, 404, TOKIO_RUNTIME_HINT),
+            }
+            #[cfg(not(feature = "tokio"))]
+            respond_error(request, 404, TOKIO_RUNTIME_HINT);
         }
         Err(_) => respond_error(request, 404, "Not found"),
     }

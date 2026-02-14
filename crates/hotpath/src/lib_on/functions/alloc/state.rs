@@ -106,6 +106,7 @@ pub(crate) fn flush_batch() {
     });
 }
 
+#[derive(Debug)]
 pub struct Measurement {
     pub name: &'static str,
     pub bytes_total: u64,
