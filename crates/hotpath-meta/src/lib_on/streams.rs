@@ -100,7 +100,7 @@ pub(crate) struct StreamsState {
     pub(crate) event_tx: CbSender<StreamEvent>,
     pub(crate) stats_map: Arc<RwLock<HashMap<u64, StreamStats>>>,
     pub(crate) shutdown_tx: Mutex<Option<CbSender<()>>>,
-    pub(crate) completion_rx: Mutex<Option<CbReceiver<HashMap<u64, StreamStats>>>>,
+    pub(crate) completion_rx: Mutex<Option<CbReceiver<()>>>,
 }
 
 pub(crate) type StreamStatsState = StreamsState;
@@ -154,38 +154,37 @@ pub(crate) fn init_streams_state() -> &'static StreamStatsState {
 
         let (event_tx, event_rx) = unbounded::<StreamEvent>();
         let (shutdown_tx, shutdown_rx) = bounded::<()>(1);
-        let (completion_tx, completion_rx) = bounded::<HashMap<u64, StreamStats>>(1);
+        let (completion_tx, completion_rx) = bounded::<()>(1);
         let stats_map = Arc::new(RwLock::new(HashMap::<u64, StreamStats>::new()));
         let stats_map_clone = Arc::clone(&stats_map);
 
         std::thread::Builder::new()
             .name("hp-meta-streams".into())
             .spawn(move || {
-                let mut local_stats = HashMap::<u64, StreamStats>::new();
-
                 loop {
                     select! {
                         recv(event_rx) -> result => {
                             match result {
                                 Ok(event) => {
-                                    process_stream_event(&mut local_stats, event);
                                     if let Ok(mut shared) = stats_map_clone.write() {
-                                        *shared = local_stats.clone();
+                                        process_stream_event(&mut shared, event);
                                     }
                                 }
                                 Err(_) => break,
                             }
                         }
                         recv(shutdown_rx) -> _ => {
-                            while let Ok(event) = event_rx.try_recv() {
-                                process_stream_event(&mut local_stats, event);
+                            if let Ok(mut shared) = stats_map_clone.write() {
+                                while let Ok(event) = event_rx.try_recv() {
+                                    process_stream_event(&mut shared, event);
+                                }
                             }
                             break;
                         }
                     }
                 }
 
-                let _ = completion_tx.send(local_stats);
+                let _ = completion_tx.send(());
             })
             .expect("Failed to spawn stream-stats-collector thread");
 
