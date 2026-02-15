@@ -521,7 +521,7 @@ fn log_debug(msg: &str) {
         let now = chrono::Local::now();
         let _ = writeln!(
             file,
-            "{} DEBUG [hotpath-meta-mcp] {}",
+            "{} DEBUG [hotpath-mcp-meta] {}",
             now.format("%Y-%m-%dT%H:%M:%S"),
             msg
         );

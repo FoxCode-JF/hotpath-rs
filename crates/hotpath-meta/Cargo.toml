@@ -40,7 +40,7 @@ futures = ["dep:tokio", "tokio/sync", "tokio/macros", "tokio/time", "tokio/rt-mu
 crossbeam = []
 threads = []
 dev = ["dep:chrono"]
-hotpath-meta-mcp = ["hotpath-meta", "dep:rmcp", "dep:tokio", "tokio/rt", "tokio/net", "dep:axum", "dep:tokio-util", "dep:chrono", "dep:schemars"]
+hotpath-mcp-meta = ["hotpath-meta", "dep:rmcp", "dep:tokio", "tokio/rt", "tokio/net", "dep:axum", "dep:tokio-util", "dep:chrono", "dep:schemars"]
 
 [dependencies]
 arc-swap = { version = "1.7", optional = true }

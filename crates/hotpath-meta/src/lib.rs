@@ -46,7 +46,7 @@ pub(crate) mod output_on;
 #[cfg(all(feature = "hotpath-meta", not(feature = "hotpath-off-meta")))]
 pub(crate) mod metrics_server;
 
-#[cfg(all(feature = "hotpath-meta-mcp", not(feature = "hotpath-off-meta")))]
+#[cfg(all(feature = "hotpath-mcp-meta", not(feature = "hotpath-off-meta")))]
 pub(crate) mod mcp_server;
 
 #[cfg(any(feature = "hotpath-meta", feature = "ci", feature = "tui"))]

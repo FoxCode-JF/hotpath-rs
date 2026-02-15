@@ -411,7 +411,7 @@ impl HotpathGuard {
 
         crate::metrics_server::start_metrics_server_once(*METRICS_SERVER_PORT);
 
-        #[cfg(feature = "hotpath-meta-mcp")]
+        #[cfg(feature = "hotpath-mcp-meta")]
         crate::mcp_server::start_mcp_server_once();
 
         if sections.contains(&Section::Futures) {
