@@ -44,6 +44,7 @@ pub struct HotpathGuardBuilder {
     limit: usize,
     output_path: Option<PathBuf>,
     sections: Option<Vec<Section>>,
+    before_report: Option<Box<dyn FnOnce() + Send + Sync>>,
 }
 
 impl HotpathGuardBuilder {
@@ -55,6 +56,7 @@ impl HotpathGuardBuilder {
             limit: 15,
             output_path: None,
             sections: None,
+            before_report: None,
         }
     }
 
@@ -80,6 +82,11 @@ impl HotpathGuardBuilder {
 
     pub fn with_sections(mut self, sections: Vec<Section>) -> Self {
         self.sections = Some(sections);
+        self
+    }
+
+    pub fn before_report(mut self, f: impl FnOnce() + Send + Sync + 'static) -> Self {
+        self.before_report = Some(Box::new(f));
         self
     }
 
@@ -117,6 +124,7 @@ impl HotpathGuardBuilder {
             recent_logs_limit,
             self.output_path,
             sections,
+            self.before_report,
         )
     }
 
@@ -149,9 +157,11 @@ pub struct HotpathGuard {
     output_path: Option<PathBuf>,
     sections: Vec<Section>,
     start_time: Instant,
+    before_report: Option<Box<dyn FnOnce() + Send + Sync>>,
 }
 
 impl HotpathGuard {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         caller_name: &'static str,
         percentiles: &[u8],
@@ -160,6 +170,7 @@ impl HotpathGuard {
         recent_logs_limit: usize,
         output_path: Option<PathBuf>,
         sections: Vec<Section>,
+        before_report: Option<Box<dyn FnOnce() + Send + Sync>>,
     ) -> Self {
         #[cfg(feature = "hotpath-alloc")]
         {
@@ -221,7 +232,12 @@ impl HotpathGuard {
             .name("hp-functions".into())
             .spawn(move || {
                 #[cfg(feature = "hotpath-meta")]
-                let _guard = hotpath_meta::HotpathGuardBuilder::new("functions-worker").limit(30).build();
+                {
+                    let builder = hotpath_meta::HotpathGuardBuilder::new("hotpath-meta").limit(20);
+                    #[cfg(feature = "tui")]
+                    let builder = builder.before_report(ratatui::restore);
+                    builder.build_with_timeout(std::time::Duration::from_secs(0));
+                }
 
                 let mut local_stats = HashMap::<&'static str, FunctionStats>::new();
 
@@ -408,12 +424,17 @@ impl HotpathGuard {
             output_path,
             sections,
             start_time,
+            before_report,
         }
     }
 }
 
 impl Drop for HotpathGuard {
     fn drop(&mut self) {
+        if let Some(f) = self.before_report.take() {
+            f();
+        }
+
         let wrapper_guard = self.wrapper_guard.take().unwrap();
         drop(wrapper_guard);
 

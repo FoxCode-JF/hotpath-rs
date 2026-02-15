@@ -245,6 +245,10 @@ impl HotpathGuardBuilder {
         self
     }
 
+    pub fn before_report(self, _f: impl FnOnce() + Send + 'static) -> Self {
+        self
+    }
+
     pub fn build(self) -> HotpathGuard {
         HotpathGuard
     }

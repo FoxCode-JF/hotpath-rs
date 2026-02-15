@@ -43,12 +43,10 @@ impl ConsoleArgs {
 
         let mut app = App::new(&self.metrics_host, self.metrics_port, self.refresh_interval);
 
-        // Use modern ratatui initialization
         let mut terminal = ratatui::init();
 
         let app_result = app.run(&mut terminal);
 
-        // Use modern ratatui restoration
         ratatui::restore();
 
         app_result.map_err(|e| eyre::eyre!("TUI error: {}", e))
