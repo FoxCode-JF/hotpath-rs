@@ -161,7 +161,6 @@ impl FunctionStats {
         unsupported_async: bool,
         wrapper: bool,
         cross_thread: bool,
-        recent_logs_limit: usize,
         tid: Option<u64>,
         result_log: Option<String>,
     ) -> Self {
@@ -181,7 +180,7 @@ impl FunctionStats {
         .expect("duration histogram init");
 
         let duration_ns = duration.as_nanos() as u64;
-        let mut recent_logs = VecDeque::with_capacity(recent_logs_limit);
+        let mut recent_logs = VecDeque::with_capacity(*crate::channels::LOGS_LIMIT);
         let (bytes_opt, count_opt) = if unsupported_async || cross_thread {
             (None, None)
         } else {
@@ -359,7 +358,6 @@ pub(crate) struct FunctionsState {
 pub(crate) fn process_measurement(
     stats: &mut HashMap<&'static str, FunctionStats>,
     m: Measurement,
-    recent_logs_limit: usize,
     start_time: Instant,
 ) {
     let elapsed = m.measurement_time.duration_since(start_time);
@@ -385,7 +383,6 @@ pub(crate) fn process_measurement(
                 m.unsupported_async,
                 m.wrapper,
                 m.cross_thread,
-                recent_logs_limit,
                 m.tid,
                 m.result_log,
             ),

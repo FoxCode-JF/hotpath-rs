@@ -222,13 +222,7 @@ pub(crate) static CHANNELS_STATE: OnceLock<ChannelStatsState> = OnceLock::new();
 
 pub(crate) use crate::lib_on::START_TIME;
 
-const DEFAULT_LOG_LIMIT: usize = 50;
-pub(crate) static LOG_LIMIT: LazyLock<usize> = LazyLock::new(|| {
-    std::env::var("HOTPATH_META_LOGS_LIMIT")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(DEFAULT_LOG_LIMIT)
-});
+pub(crate) use crate::lib_on::hotpath_guard::LOGS_LIMIT;
 
 fn process_channel_event(stats: &mut HashMap<u64, ChannelEntry>, event: ChannelEvent) {
     match event {
@@ -259,7 +253,7 @@ fn process_channel_event(stats: &mut HashMap<u64, ChannelEntry>, event: ChannelE
                 channel_stats.sent_count += 1;
                 channel_stats.update_state();
 
-                let limit = *LOG_LIMIT;
+                let limit = *LOGS_LIMIT;
                 if channel_stats.sent_logs.len() >= limit {
                     channel_stats.sent_logs.pop_front();
                 }
@@ -276,7 +270,7 @@ fn process_channel_event(stats: &mut HashMap<u64, ChannelEntry>, event: ChannelE
                 channel_stats.received_count += 1;
                 channel_stats.update_state();
 
-                let limit = *LOG_LIMIT;
+                let limit = *LOGS_LIMIT;
                 if channel_stats.received_logs.len() >= limit {
                     channel_stats.received_logs.pop_front();
                 }

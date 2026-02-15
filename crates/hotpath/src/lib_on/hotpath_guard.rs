@@ -2,9 +2,17 @@ use arc_swap::ArcSwapOption;
 use crossbeam_channel::{bounded, select, unbounded};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::thread;
 use std::time::Instant;
+
+const DEFAULT_LOGS_LIMIT: usize = 50;
+pub(crate) static LOGS_LIMIT: LazyLock<usize> = LazyLock::new(|| {
+    std::env::var("HOTPATH_LOGS_LIMIT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_LOGS_LIMIT)
+});
 
 use std::io::Write;
 
@@ -137,11 +145,6 @@ impl HotpathGuardBuilder {
     }
 
     pub fn build(self) -> HotpathGuard {
-        let recent_logs_limit = std::env::var("HOTPATH_RECENT_LOGS")
-            .ok()
-            .and_then(|s| s.parse::<usize>().ok())
-            .unwrap_or(50);
-
         let sections = self.resolve_sections();
 
         HotpathGuard::new(
@@ -149,7 +152,6 @@ impl HotpathGuardBuilder {
             &self.percentiles,
             self.functions_limit,
             self.format,
-            recent_logs_limit,
             self.output_path,
             sections,
             self.before_report,
@@ -163,7 +165,7 @@ impl HotpathGuardBuilder {
     pub fn build_with_timeout(self, duration: std::time::Duration) {
         let guard = self.build();
         if let Some(timeout) =
-            crate::shared::resolve_timeout_duration(duration, "HOTPATH_TIMEOUT_MS")
+            crate::shared::resolve_timeout_duration(duration, "HOTPATH_SHUTDOWN_TIMEOUT_MS")
         {
             thread::spawn(move || {
                 thread::sleep(timeout);
@@ -203,7 +205,6 @@ impl HotpathGuard {
         percentiles: &[u8],
         limit: usize,
         format: Format,
-        recent_logs_limit: usize,
         output_path: Option<PathBuf>,
         sections: Vec<Section>,
         before_report: Option<Box<dyn FnOnce() + Send + Sync>>,
@@ -266,8 +267,6 @@ impl HotpathGuard {
         let worker_percentiles = percentiles.clone();
         let worker_caller_name = caller_name;
         let worker_limit = limit;
-        let worker_recent_logs_limit = recent_logs_limit;
-
         thread::Builder::new()
             .name("hp-functions".into())
             .spawn(move || {
@@ -286,14 +285,14 @@ impl HotpathGuard {
                         recv(rx) -> result => {
                             match result {
                                 Ok(measurement) => {
-                                    process_measurement(&mut local_stats, measurement, worker_recent_logs_limit, worker_start_time);
+                                    process_measurement(&mut local_stats, measurement, worker_start_time);
                                 }
                                 Err(_) => break,
                             }
                         }
                         recv(shutdown_rx) -> _ => {
                             while let Ok(measurement) = rx.try_recv() {
-                                process_measurement(&mut local_stats, measurement, worker_recent_logs_limit, worker_start_time);
+                                process_measurement(&mut local_stats, measurement, worker_start_time);
                             }
                             break;
                         }

@@ -126,14 +126,13 @@ impl FunctionStats {
         first_ns: u64,
         elapsed: Duration,
         wrapper: bool,
-        recent_logs_limit: usize,
         tid: Option<u64>,
         result_log: Option<String>,
     ) -> Self {
         let hist = Histogram::<u64>::new_with_bounds(Self::LOW_NS, Self::HIGH_NS, Self::SIGFIGS)
             .expect("hdrhistogram init");
 
-        let mut recent_logs = VecDeque::with_capacity(recent_logs_limit);
+        let mut recent_logs = VecDeque::with_capacity(*crate::channels::LOGS_LIMIT);
         recent_logs.push_back((first_ns, elapsed, tid, result_log));
 
         let mut s = Self {
@@ -208,7 +207,6 @@ pub(crate) struct FunctionsState {
 pub(crate) fn process_measurement(
     stats: &mut HashMap<&'static str, FunctionStats>,
     m: Measurement,
-    recent_logs_limit: usize,
     start_time: Instant,
 ) {
     let elapsed = m.measurement_time.duration_since(start_time);
@@ -217,14 +215,7 @@ pub(crate) fn process_measurement(
     } else {
         stats.insert(
             m.name,
-            FunctionStats::new_duration(
-                m.duration_ns,
-                elapsed,
-                m.wrapper,
-                recent_logs_limit,
-                m.tid,
-                m.result_log,
-            ),
+            FunctionStats::new_duration(m.duration_ns, elapsed, m.wrapper, m.tid, m.result_log),
         );
     }
 }
