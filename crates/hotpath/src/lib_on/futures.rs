@@ -380,8 +380,9 @@ pub fn get_futures_json() -> JsonFuturesList {
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
-    let stats = get_all_future_stats();
-    stats.get(&future_id).map(|s| FutureLogsList {
+    let state = FUTURES_STATE.get()?;
+    let futures_data = state.stats_map.read().unwrap();
+    futures_data.get(&future_id).map(|s| FutureLogsList {
         id: future_id.to_string(),
         calls: s.logs.iter().rev().cloned().collect(),
     })

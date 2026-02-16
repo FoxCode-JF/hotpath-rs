@@ -666,8 +666,9 @@ pub fn get_channels_json() -> JsonChannelsList {
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_channel_logs(channel_id: &str) -> Option<ChannelLogs> {
     let id = channel_id.parse::<u32>().ok()?;
-    let stats = get_all_channel_stats();
-    stats.get(&id).map(|channel_stats| ChannelLogs {
+    let state = CHANNELS_STATE.get()?;
+    let channels_data = state.stats_map.read().unwrap();
+    channels_data.get(&id).map(|channel_stats| ChannelLogs {
         id: channel_id.to_string(),
         sent_logs: channel_stats.sent_logs.iter().rev().cloned().collect(),
         received_logs: channel_stats.received_logs.iter().rev().cloned().collect(),

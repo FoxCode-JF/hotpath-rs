@@ -373,8 +373,9 @@ pub fn get_streams_json() -> JsonStreamsList {
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn get_stream_logs(stream_id: &str) -> Option<StreamLogs> {
     let id = stream_id.parse::<u32>().ok()?;
-    let stats = get_all_stream_stats();
-    stats.get(&id).map(|stream_stats| {
+    let state = STREAMS_STATE.get()?;
+    let streams_data = state.stats_map.read().unwrap();
+    streams_data.get(&id).map(|stream_stats| {
         let mut yielded_logs: Vec<DataFlowLogEntry> = stream_stats.logs.iter().cloned().collect();
 
         // Sort by index descending (most recent first)
