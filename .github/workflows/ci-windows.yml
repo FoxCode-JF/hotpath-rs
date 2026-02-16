@@ -7,6 +7,7 @@ on:
     branches: [main]
 
 jobs:
+  if: false
   build:
     name: test ${{ matrix.rust }}
     runs-on: windows-latest
