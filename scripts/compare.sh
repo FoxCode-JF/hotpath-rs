@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BEFORE_REF="$1"
+AFTER_REF="$2"
+ORIGINAL_REF=$(git rev-parse --abbrev-ref HEAD)
+# If detached HEAD, use commit hash
+if [ "$ORIGINAL_REF" = "HEAD" ]; then
+    ORIGINAL_REF=$(git rev-parse HEAD)
+fi
+
+BENCH_CMD="cargo run -p hotpath --features=tui,hotpath,hotpath-meta,hotpath-alloc-meta --bin hotpath"
+
+run_bench() {
+    local ref="$1"
+    local output="$2"
+    local resolved
+    resolved=$(git rev-parse --short "$ref")
+    local label="$ref"
+    [ "$ref" != "$resolved" ] && label="$ref ($resolved)"
+    echo "==> Checking out $ref"
+    git checkout "$ref"
+    local -a bench_env=(
+        HOTPATH_TUI_TAB=1
+        HOTPATH_META_REPORT='functions-timing,functions-alloc,threads'
+        HOTPATH_META_OUTPUT_PATH="$output"
+        HOTPATH_META_SHUTDOWN_MS=10000
+        HOTPATH_META_TIMEOUT_MS=10000
+        HOTPATH_META_EXCLUDE_WRAPPER=true
+        RUSTFLAGS='--cfg tokio_unstable'
+    )
+    echo "==> Running: ${bench_env[*]} $BENCH_CMD"
+    env "${bench_env[@]}" $BENCH_CMD
+    local tmp_header
+    tmp_header=$(mktemp)
+    echo "Report generated for: $label" > "$tmp_header"
+    echo "" >> "$tmp_header"
+    cat "$output" >> "$tmp_header"
+    mv "$tmp_header" "$output"
+    echo "==> Results saved to $output"
+}
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Error: uncommitted changes. Commit or stash before running." >&2
+    exit 1
+fi
+
+mkdir -p tmp
+
+cleanup() {
+    echo "==> Restoring to $ORIGINAL_REF"
+    git checkout "$ORIGINAL_REF"
+}
+trap cleanup EXIT
+
+run_bench "$BEFORE_REF" "tmp/before.txt"
+run_bench "$AFTER_REF" "tmp/after.txt"
+
+reset
+
+echo ""
+echo "==> Before: $BEFORE_REF"
+echo ""
+cat "tmp/before.txt"
+echo ""
+echo ""
+echo "==> After: $AFTER_REF"
+echo ""
+cat "tmp/after.txt"

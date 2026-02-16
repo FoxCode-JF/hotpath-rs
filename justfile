@@ -4,9 +4,13 @@
 default:
     @just --list
 
+# Run benchmark for current state
+bench:
+    bash scripts/bench.sh
+
 # Run benchmarks comparing two git refs
-bench before after:
-    bash scripts/bench.sh {{before}} {{after}}
+compare before after:
+    bash scripts/compare.sh {{before}} {{after}}
 
 # Run all tests
 test_all:
