@@ -2,7 +2,7 @@
 
 use crossbeam_channel::{bounded, select, unbounded, Receiver as CbReceiver, Sender as CbSender};
 use std::collections::{HashMap, VecDeque};
-use std::sync::{Arc, LazyLock, Mutex, OnceLock, RwLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
 #[cfg(target_os = "linux")]
 use quanta::Instant;
@@ -430,7 +430,7 @@ pub trait InstrumentChannelLog {
 
 cfg_if::cfg_if! {
     if #[cfg(any(feature = "tokio", feature = "futures"))] {
-        pub static RT: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+        pub static RT: std::sync::LazyLock<tokio::runtime::Runtime> = std::sync::LazyLock::new(|| {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_time()
                 .build()
