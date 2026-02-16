@@ -259,9 +259,7 @@ pub fn send_duration_measurement_with_log(
     result_log: Option<String>,
 ) {
     if FUNCTIONS_STATE.get().is_none() {
-        panic!(
-            "HotpathGuardBuilder::new(\"main\").build() or #[hotpath_meta::main] must be used when --features hotpath-meta is enabled"
-        );
+        return;
     }
 
     MEASUREMENT_BATCH.with(|batch| {

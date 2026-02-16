@@ -443,9 +443,7 @@ pub fn send_alloc_measurement_with_log(
     result_log: Option<String>,
 ) {
     if FUNCTIONS_STATE.get().is_none() {
-        panic!(
-            "HotpathGuardBuilder::new(\"main\").build() or #[hotpath::main] must be used when --features hotpath-alloc is enabled"
-        );
+        return;
     }
 
     MEASUREMENT_BATCH.with(|batch| {
