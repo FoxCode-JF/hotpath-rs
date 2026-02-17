@@ -598,7 +598,12 @@ pub mod tests {
         let mut timing_json = String::new();
         let mut last_error = None;
 
-        // Give the server some time to start up
+        let timing_expected = [
+            "basic::sync_function",
+            "basic::async_function",
+            "custom_block",
+        ];
+
         for _attempt in 0..18 {
             sleep(Duration::from_millis(750));
 
@@ -609,7 +614,9 @@ pub mod tests {
                         .read_to_string()
                         .expect("Failed to read response body");
                     last_error = None;
-                    break;
+                    if timing_expected.iter().all(|e| timing_json.contains(e)) {
+                        break;
+                    }
                 }
                 Err(e) => {
                     last_error = Some(format!("Request error: {}", e));
@@ -620,17 +627,11 @@ pub mod tests {
         if let Some(error) = last_error {
             let _ = child.kill();
             panic!(
-                "Failed to connect to /functions_timing after 12 retries: {}",
+                "Failed to connect to /functions_timing after 18 retries: {}",
                 error
             );
         }
 
-        // Assert timing JSON contains expected function names
-        let timing_expected = [
-            "basic::sync_function",
-            "basic::async_function",
-            "custom_block",
-        ];
         for expected in timing_expected {
             assert!(
                 timing_json.contains(expected),

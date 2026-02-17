@@ -37,7 +37,11 @@ pub mod tests {
                         .read_to_string()
                         .expect("Failed to read response body");
                     last_error = None;
-                    break;
+                    if json_text.contains("thread_count")
+                        && !json_text.contains("\"thread_count\":0")
+                    {
+                        break;
+                    }
                 }
                 Err(e) => {
                     last_error = Some(format!("Request error: {}", e));

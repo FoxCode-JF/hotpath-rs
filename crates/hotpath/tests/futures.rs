@@ -130,6 +130,8 @@ pub mod tests {
         let mut json_text = String::new();
         let mut last_error = None;
 
+        let all_expected = ["basic_futures.rs", "primary_count", "data_flow_type"];
+
         for _attempt in 0..12 {
             sleep(Duration::from_millis(750));
 
@@ -140,7 +142,9 @@ pub mod tests {
                         .read_to_string()
                         .expect("Failed to read response body");
                     last_error = None;
-                    break;
+                    if all_expected.iter().all(|e| json_text.contains(e)) {
+                        break;
+                    }
                 }
                 Err(e) => {
                     last_error = Some(format!("Request error: {}", e));
@@ -153,7 +157,6 @@ pub mod tests {
             panic!("Failed after 12 retries: {}", error);
         }
 
-        let all_expected = ["basic_futures.rs", "primary_count", "data_flow_type"];
         for expected in all_expected {
             assert!(
                 json_text.contains(expected),
