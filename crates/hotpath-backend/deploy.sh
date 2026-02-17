@@ -13,3 +13,5 @@ rsync -avz ../../target/x86_64-unknown-linux-musl/release/server $TARGET_NODE:/r
 # Rsync static assets
 rsync -azr --delete html/ $TARGET_NODE:/root/hotpath-backend/html
 rsync -azr --delete assets/ $TARGET_NODE:/root/hotpath-backend/assets
+ssh $TARGET_NODE mkdir -p /root/hotpath-backend/html_src/src
+rsync -azr --delete html_src/src/ $TARGET_NODE:/root/hotpath-backend/html_src/src
