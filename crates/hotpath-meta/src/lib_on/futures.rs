@@ -1,6 +1,7 @@
 //! Futures instrumentation module - tracks async Future lifecycle and poll statistics.
 
 use crate::channels::{resolve_label, LOGS_LIMIT, START_TIME};
+use crate::data_flow::{WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS};
 use crate::metrics_server::METRICS_SERVER_PORT;
 use crossbeam_channel::{bounded, select, unbounded, Receiver as CbReceiver, Sender as CbSender};
 use std::collections::{HashMap, VecDeque};
@@ -162,25 +163,54 @@ pub fn init_futures_state() {
         std::thread::Builder::new()
             .name("hp-meta-futures".into())
             .spawn(move || {
+                let mut local_buffer: Vec<FutureEvent> = Vec::with_capacity(WORKER_BATCH_SIZE);
+                let flush_interval = std::time::Duration::from_millis(WORKER_FLUSH_INTERVAL_MS);
+
                 loop {
                     select! {
                         recv(event_rx) -> result => {
                             match result {
                                 Ok(event) => {
-                                    if let Ok(mut shared) = stats_map_clone.write() {
-                                        process_future_event(&mut shared, event);
+                                    local_buffer.push(event);
+                                    if local_buffer.len() >= WORKER_BATCH_SIZE {
+                                        if let Ok(mut shared) = stats_map_clone.write() {
+                                            for e in local_buffer.drain(..) {
+                                                process_future_event(&mut shared, e);
+                                            }
+                                        }
                                     }
                                 }
-                                Err(_) => break,
+                                Err(_) => {
+                                    if !local_buffer.is_empty() {
+                                        if let Ok(mut shared) = stats_map_clone.write() {
+                                            for e in local_buffer.drain(..) {
+                                                process_future_event(&mut shared, e);
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
                             }
                         }
                         recv(shutdown_rx) -> _ => {
                             if let Ok(mut shared) = stats_map_clone.write() {
+                                for e in local_buffer.drain(..) {
+                                    process_future_event(&mut shared, e);
+                                }
                                 while let Ok(event) = event_rx.try_recv() {
                                     process_future_event(&mut shared, event);
                                 }
                             }
                             break;
+                        }
+                        default(flush_interval) => {
+                            if !local_buffer.is_empty() {
+                                if let Ok(mut shared) = stats_map_clone.write() {
+                                    for e in local_buffer.drain(..) {
+                                        process_future_event(&mut shared, e);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -355,8 +385,9 @@ pub fn get_futures_json() -> JsonFuturesList {
 }
 
 pub fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
-    let stats = get_all_future_stats();
-    stats.get(&future_id).map(|s| FutureLogsList {
+    let state = FUTURES_STATE.get()?;
+    let futures_data = state.stats_map.read().unwrap();
+    futures_data.get(&future_id).map(|s| FutureLogsList {
         id: future_id.to_string(),
         calls: s.logs.iter().rev().cloned().collect(),
     })
