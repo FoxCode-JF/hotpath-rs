@@ -1,10 +1,3 @@
-## Development dependencies
-
-- https://github.com/casey/just
-- https://github.com/rust-lang/mdBook
-- https://github.com/pawurb/mdbook-reading-time 
-- https://github.com/pawurb/mdbook-assets-hash 
-
 ## Submitting Changes
 
 1. Create a feature branch from `main`
@@ -19,6 +12,8 @@ Project maintains a complete copy of `hotpath` -> `hotpath-meta` and `hotpath-ma
 All changes applied to `hotpath` and `hotpath-macros` should be mirrored to their meta versions. It's a significant development overhead but it allows to benchmark the library using itself. Let me know if you can think of a better way to handle it.
 
 ### Benchmarking `hotpath` 
+
+Install [just](https://github.com/casey/just) and run:
 
 ```
 just bench
@@ -37,6 +32,10 @@ Benchmarks two versions of the library (branch names or commit SHAs are supporte
 ## Running documentation server
 
 Install the dependencies:
+
+- https://github.com/rust-lang/mdBook
+- https://github.com/pawurb/mdbook-reading-time 
+- https://github.com/pawurb/mdbook-assets-hash 
 
 ```bash
 cargo install mdbook
