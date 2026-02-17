@@ -12,11 +12,17 @@ use tracing::Instrument;
 use tracing::info_span;
 use uuid::Uuid;
 
+struct Faq {
+    question: &'static str,
+    answer: &'static str,
+}
+
 struct SeoConfig {
     path: &'static str,
     title: &'static str,
     description: &'static str,
     breadcrumb_label: &'static str,
+    faqs: &'static [Faq],
 }
 
 const SEO_MAPPINGS: &[SeoConfig] = &[
@@ -25,66 +31,116 @@ const SEO_MAPPINGS: &[SeoConfig] = &[
         title: "hotpath-rs | Rust Performance & Memory Profiler (Async Runtime)",
         description: "Lightweight Rust profiler for performance metrics, memory allocations, channels and runtime monitoring. Profile functions, channels, futures, streams and threads with low overhead.",
         breadcrumb_label: "Home",
+        faqs: &[
+            Faq {
+                question: "What is hotpath-rs?",
+                answer: "hotpath-rs is a Rust performance profiler that instruments functions, channels, futures, and streams. It measures execution time, memory allocations, and async data flow to help find runtime bottlenecks. It is used by open-source projects including Apache OpenDAL and Apache HoraeDB.",
+            },
+            Faq {
+                question: "Does hotpath-rs have runtime overhead when disabled?",
+                answer: "No. hotpath-rs is fully gated by a Cargo feature flag. When the feature is not enabled, all macros compile to no-ops with zero compile-time and runtime overhead. All library dependencies are optional and not compiled unless profiling is enabled.",
+            },
+            Faq {
+                question: "What metrics does hotpath-rs track?",
+                answer: "hotpath-rs tracks function execution time (avg, total, p95, p99), memory allocations (bytes and count per function), channel throughput (send/receive counts, queue sizes), stream items yielded, future poll counts and lifecycle, thread CPU usage, and Tokio runtime worker stats.",
+            },
+        ],
     },
     SeoConfig {
         path: "/sampling_comparison",
         title: "Rust Performance Profiling: Instrumentation vs Sampling Profilers | hotpath-rs",
         description: "Compare instrumentation and sampling approaches to Rust performance profiling. See how hotpath-rs differs from perf, flamegraph, and samply for CPU-bound, blocking I/O, and async workloads.",
         breadcrumb_label: "Sampling Comparison",
+        faqs: &[
+            Faq {
+                question: "What is the difference between instrumentation and sampling profilers in Rust?",
+                answer: "Sampling profilers like perf, flamegraph, and samply periodically interrupt the program to record CPU activity. Instrumentation profilers like hotpath-rs measure the exact wall-clock execution time of annotated functions, including time spent waiting on async I/O. For CPU-bound code both approaches produce similar results, but for async and I/O-heavy workloads the numbers can differ significantly.",
+            },
+            Faq {
+                question: "When should I use hotpath-rs instead of perf or flamegraph?",
+                answer: "Use hotpath-rs when profiling async or I/O-heavy Rust applications where wall-clock latency matters more than CPU time. Sampling profilers like perf and flamegraph are better for optimizing CPU-bound hot paths. In practice, the two approaches complement each other: sampling profilers for CPU optimization, hotpath-rs for end-to-end latency analysis.",
+            },
+            Faq {
+                question: "Why do sampling profilers show different results for async Rust code?",
+                answer: "Sampling profilers only capture CPU activity, so they miss time spent awaiting I/O or async operations where no CPU work occurs. hotpath-rs measures logical execution time including wait periods. For example, in async file I/O benchmarks, hotpath-rs measured create_file at over 400% of total time (due to concurrent awaits) while samply showed only 45% for the same function.",
+            },
+        ],
     },
     SeoConfig {
         path: "/profiling_modes",
         title: "Rust Profiling Modes: Static Reports & Live Monitoring Dashboard | hotpath-rs",
         description: "Two ways to profile Rust performance: static reports for one-off analysis and a live monitoring dashboard for real-time runtime metrics. Track timing, memory, and data flow with hotpath-rs.",
         breadcrumb_label: "Profiling Modes",
+        faqs: &[],
     },
     SeoConfig {
         path: "/functions",
         title: "Rust Function Performance Profiler: Timing & Memory Metrics | hotpath-rs",
         description: "Profile Rust function performance with precise timing metrics, memory allocation tracking, and percentile statistics. Measure sync and async functions to find and optimize runtime bottlenecks.",
         breadcrumb_label: "Functions",
+        faqs: &[
+            Faq {
+                question: "How do I profile a Rust function with hotpath-rs?",
+                answer: "Add #[hotpath::measure] to the function you want to profile and #[hotpath::main] to your main function. Then run your program with cargo run --features=hotpath. The profiler will output a table with call count, average time, percentiles (p95, p99), total time, and percentage of total runtime for each measured function.",
+            },
+            Faq {
+                question: "Can hotpath-rs profile async Rust functions?",
+                answer: "Yes. The #[hotpath::measure] macro works on both sync and async functions, measuring wall-clock execution time including await points. For memory allocation profiling of async functions, use tokio's current_thread runtime mode because the allocation tracker relies on thread-local storage.",
+            },
+            Faq {
+                question: "How does hotpath-rs track memory allocations?",
+                answer: "hotpath-rs uses a custom global allocator to intercept all memory allocations and attributes them to instrumented functions. Enable it with cargo run --features='hotpath,hotpath-alloc'. It reports per-function byte counts and allocation counts. By default tracking is cumulative (includes nested calls); set HOTPATH_ALLOC_SELF=true for exclusive (direct-only) allocations.",
+            },
+        ],
     },
     SeoConfig {
         path: "/futures",
         title: "Async Rust Performance Profiler: Future Monitoring & Poll Metrics | hotpath-rs",
         description: "Monitor async Rust futures with poll counts, completion tracking, and performance metrics. Debug async bottlenecks and optimize future execution patterns with hotpath-rs.",
         breadcrumb_label: "Futures",
+        faqs: &[],
     },
     SeoConfig {
         path: "/channels",
         title: "Rust Channels Performance Monitoring: Message Flow & Throughput Metrics | hotpath-rs",
         description: "Monitor Rust channels performance with hotpath-rs. Track tokio, crossbeam, futures, and std channel metrics including send/receive counts, queue sizes, and throughput.",
         breadcrumb_label: "Channels",
+        faqs: &[],
     },
     SeoConfig {
         path: "/streams",
         title: "Rust Async Stream Profiler: Performance Monitoring & Throughput Metrics | hotpath-rs",
         description: "Profile async Rust streams with throughput metrics, item counts, and optional item logging. Monitor futures::Stream performance with the hotpath::stream! macro.",
         breadcrumb_label: "Streams",
+        faqs: &[],
     },
     SeoConfig {
         path: "/threads",
         title: "Rust Thread Performance Monitoring: Per-Thread CPU & Memory Metrics | hotpath-rs",
         description: "Monitor per-thread CPU usage and memory allocation metrics in Rust applications. Track thread states, allocation counts, and system time in the hotpath-rs monitoring dashboard.",
         breadcrumb_label: "Threads",
+        faqs: &[],
     },
     SeoConfig {
         path: "/tokio_runtime",
         title: "Tokio Runtime Performance Monitoring: Worker Stats, Task Metrics & Scheduling | hotpath-rs",
         description: "Monitor Tokio runtime performance with hotpath-rs. Track worker thread utilization, task scheduling, queue depths, and I/O driver metrics for real-time Rust application monitoring.",
         breadcrumb_label: "Tokio Runtime",
+        faqs: &[],
     },
     SeoConfig {
         path: "/github_ci",
         title: "Rust Performance CI: Automated Benchmarking & Regression Detection | hotpath-rs",
         description: "Automate Rust performance benchmarking in GitHub Actions. Detect runtime regressions on every pull request with detailed metrics comparison using hotpath-rs CI integration.",
         breadcrumb_label: "GitHub CI",
+        faqs: &[],
     },
     SeoConfig {
         path: "/mcp",
         title: "AI-Powered Rust Profiling: Query Performance Metrics with LLMs via MCP | hotpath-rs",
         description: "Connect LLM agents like Claude Code to live Rust performance metrics via MCP. Query runtime profiling data, memory usage, and async operations in natural language.",
         breadcrumb_label: "MCP Integration",
+        faqs: &[],
     },
 ];
 
@@ -245,6 +301,14 @@ pub async fn seo_titles(request: Request, next: Next) -> Response {
         entity_json_ld
     ));
 
+    if !config.faqs.is_empty() {
+        let faq_json_ld = build_faq_page_json_ld(config.faqs);
+        json_ld_block.push_str(&format!(
+            r#"<script type="application/ld+json">{}</script>"#,
+            faq_json_ld
+        ));
+    }
+
     let modified = modified.replace("</head>", &format!("{}</head>", json_ld_block));
 
     Response::from_parts(parts, Body::from(modified)).into_response()
@@ -261,6 +325,23 @@ fn build_breadcrumb_json_ld(label: &str, canonical_url: &str, is_home: bool) -> 
     format!(
         r#"{{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{{"@type":"ListItem","position":1,"name":"Home","item":"https://hotpath.rs/"}},{{"@type":"ListItem","position":2,"name":"{}","item":"{}"}}]}}"#,
         label, canonical_url
+    )
+}
+
+fn build_faq_page_json_ld(faqs: &[Faq]) -> String {
+    let entries: Vec<String> = faqs
+        .iter()
+        .map(|faq| {
+            format!(
+                r#"{{"@type":"Question","name":"{}","acceptedAnswer":{{"@type":"Answer","text":"{}"}}}}"#,
+                faq.question, faq.answer
+            )
+        })
+        .collect();
+
+    format!(
+        r#"{{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{}]}}"#,
+        entries.join(",")
     )
 }
 
