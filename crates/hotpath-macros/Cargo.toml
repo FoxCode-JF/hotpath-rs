@@ -2,7 +2,7 @@
 name = "hotpath-macros"
 version = "0.11.0"
 edition = "2021"
-repository = "https://github.com/pawurb/hotpath"
+repository = "https://github.com/pawurb/hotpath-rs"
 description = "Simple async Rust profiler with memory and data-flow insights - quickly find and debug performance bottlenecks. Proc macros crate."
 readme = "../../README.md"
 license = "MIT"
