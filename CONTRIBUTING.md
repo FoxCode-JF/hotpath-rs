@@ -9,7 +9,7 @@
 
 Project maintains a complete copy of `hotpath` (`hotpath-meta`) and `hotpath-macros` (`hotpath-macros-meta`). All changes must be mirrored in their corresponding `-meta` crates. This adds some maintenance overhead, but it allows to benchmark the library using itself, which is an invaluable source of performance data and optimization insights.
 
-A full copy is needed because a crate cannot depend on itself. Extracting shared core is also impractical, because `hotpath` uses a custom instrumentation logic (like `#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]` calls). If you have ideas for a cleaner or less repetitive way to achieve self-profiling without full crate duplication, I'm open to suggestions.
+A full copy is needed because a crate cannot depend on itself. Extracting shared core is also impractical, because `hotpath` uses a custom instrumentation logic (like `#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure_all)]` calls). If you have ideas for a cleaner way to implement self-profiling without full crate duplication, I'm open to suggestions.
 
 ### Benchmarking `hotpath` 
 
