@@ -27,7 +27,7 @@ pub struct HPArgs {
     pub console_args: ConsoleArgs,
 }
 
-#[hotpath::main(limit = 20)]
+#[hotpath::main(limit = 10)]
 fn main() -> Result<()> {
     let root_args = HPArgs::parse();
 
