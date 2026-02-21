@@ -42,17 +42,18 @@ fn print_diff(diff: &JsonReportDiff) {
         return;
     }
 
+    println!("Total Elapsed: {}", diff.total_elapsed_diff);
+    if let Some(cpu_baseline) = &diff.cpu_baseline_diff {
+        println!("CPU Baseline: {}", cpu_baseline);
+    }
+    println!();
+
     if let Some(comparison) = &diff.functions_timing {
         println!(
             "Functions Timing ({} - {})",
             comparison.profiling_mode, comparison.description
         );
-        println!("Total Elapsed: {}", comparison.total_elapsed_diff);
         print_comparison_table(comparison);
-        println!(
-            "Before: {} | After: {}",
-            comparison.before_elapsed, comparison.after_elapsed
-        );
         println!();
     }
 
@@ -61,12 +62,7 @@ fn print_diff(diff: &JsonReportDiff) {
             "Functions Alloc ({} - {})",
             comparison.profiling_mode, comparison.description
         );
-        println!("Total Elapsed: {}", comparison.total_elapsed_diff);
         print_comparison_table(comparison);
-        println!(
-            "Before: {} | After: {}",
-            comparison.before_elapsed, comparison.after_elapsed
-        );
         println!();
     }
 }

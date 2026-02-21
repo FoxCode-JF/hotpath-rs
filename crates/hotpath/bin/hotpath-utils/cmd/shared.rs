@@ -80,9 +80,6 @@ pub struct MetricsComparison {
     pub profiling_mode: hotpath::ProfilingMode,
     pub description: String,
     pub percentiles: Vec<u8>,
-    pub before_elapsed: String,
-    pub after_elapsed: String,
-    pub total_elapsed_diff: MetricDiff,
     pub function_diffs: Vec<FunctionMetricsDiff>,
 }
 
@@ -96,6 +93,8 @@ pub struct FunctionMetricsDiff {
 
 #[derive(Debug, Clone)]
 pub struct JsonReportDiff {
+    pub total_elapsed_diff: MetricDiff,
+    pub cpu_baseline_diff: Option<MetricDiff>,
     pub functions_timing: Option<MetricsComparison>,
     pub functions_alloc: Option<MetricsComparison>,
 }
@@ -111,7 +110,33 @@ pub fn compare_reports(before: &JsonReport, after: &JsonReport) -> JsonReportDif
         _ => None,
     };
 
+    let (before_section, after_section) = before
+        .functions_timing
+        .as_ref()
+        .zip(after.functions_timing.as_ref())
+        .or_else(|| {
+            before
+                .functions_alloc
+                .as_ref()
+                .zip(after.functions_alloc.as_ref())
+        })
+        .unzip();
+
+    let before_ns = before_section.map(|s| s.total_elapsed_ns).unwrap_or(0);
+    let after_ns = after_section.map(|s| s.total_elapsed_ns).unwrap_or(0);
+
+    let cpu_baseline_diff = match (&before.cpu_baseline, &after.cpu_baseline) {
+        (Some(b), Some(a)) => {
+            let b_ns = parse_duration(&b.avg).unwrap_or(0);
+            let a_ns = parse_duration(&a.avg).unwrap_or(0);
+            Some(MetricDiff::DurationNs(b_ns, a_ns))
+        }
+        _ => None,
+    };
+
     JsonReportDiff {
+        total_elapsed_diff: MetricDiff::DurationNs(before_ns, after_ns),
+        cpu_baseline_diff,
         functions_timing,
         functions_alloc,
     }
@@ -200,10 +225,6 @@ pub fn compare_metrics(
     use hotpath::ProfilingMode;
 
     let is_alloc = matches!(before_metrics.hotpath_profiling_mode, ProfilingMode::Alloc);
-
-    let before_elapsed = parse_duration(&before_metrics.time_elapsed).unwrap_or(0);
-    let after_elapsed = parse_duration(&after_metrics.time_elapsed).unwrap_or(0);
-    let total_elapsed_diff = MetricDiff::DurationNs(before_elapsed, after_elapsed);
 
     let mut function_diffs = Vec::new();
     let mut new_functions = Vec::new();
@@ -313,9 +334,6 @@ pub fn compare_metrics(
         profiling_mode: before_metrics.hotpath_profiling_mode.clone(),
         description: before_metrics.description.clone(),
         percentiles: before_metrics.percentiles.clone(),
-        before_elapsed: before_metrics.time_elapsed.clone(),
-        after_elapsed: after_metrics.time_elapsed.clone(),
-        total_elapsed_diff,
         function_diffs,
     }
 }

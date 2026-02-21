@@ -1,6 +1,6 @@
 mod comment;
 
-use crate::cmd::shared::{compare_metrics, MetricsComparison};
+use crate::cmd::shared::{compare_metrics, MetricDiff, MetricsComparison};
 use clap::Parser;
 use comment::upsert_pr_comment;
 use eyre::Result;
@@ -58,8 +58,17 @@ impl ProfilePrArgs {
             .map_err(|e| eyre::eyre!("Failed to deserialize base metrics: {}", e))?;
 
         let comparison = compare_metrics(&base_metrics_data, &head_metrics_data);
-        let comparison_markdown =
-            format_comparison_markdown(&comparison, emoji_threshold, self.benchmark_id.as_deref());
+        let total_elapsed_diff = MetricDiff::DurationNs(
+            base_metrics_data.total_elapsed_ns,
+            head_metrics_data.total_elapsed_ns,
+        );
+        let comparison_markdown = format_comparison_markdown(
+            &comparison,
+            &total_elapsed_diff,
+            None,
+            emoji_threshold,
+            self.benchmark_id.as_deref(),
+        );
 
         let mut body = String::new();
         body.push_str(&comparison_markdown);
@@ -88,6 +97,8 @@ impl ProfilePrArgs {
 
 fn format_comparison_markdown(
     comparison: &MetricsComparison,
+    total_elapsed_diff: &MetricDiff,
+    cpu_baseline_diff: Option<&MetricDiff>,
     emoji_threshold: Option<u32>,
     benchmark_id: Option<&str>,
 ) -> String {
@@ -108,10 +119,14 @@ fn format_comparison_markdown(
     ));
     markdown.push_str(&format!(
         "**Total Elapsed Time:** {}\n",
-        comparison
-            .total_elapsed_diff
-            .format_with_emoji(emoji_threshold)
+        total_elapsed_diff.format_with_emoji(emoji_threshold)
     ));
+    if let Some(cpu_baseline) = cpu_baseline_diff {
+        markdown.push_str(&format!(
+            "**CPU Baseline:** {}\n",
+            cpu_baseline.format_with_emoji(emoji_threshold)
+        ));
+    }
     markdown.push_str(&format!(
         "**Profiling Mode:** {} - {}\n",
         comparison.profiling_mode, comparison.description
@@ -236,8 +251,10 @@ mod test {
         let main_metrics = make_metrics(main_data, 126464296);
 
         let comparison = compare_metrics(&main_metrics, &pr_metrics);
+        let elapsed_diff =
+            MetricDiff::DurationNs(main_metrics.total_elapsed_ns, pr_metrics.total_elapsed_ns);
 
-        println!("Total elapsed time diff: {}", comparison.total_elapsed_diff);
+        println!("Total elapsed time diff: {}", elapsed_diff);
 
         for function_diff in &comparison.function_diffs {
             println!("Function: {}", function_diff.function_name);
@@ -246,7 +263,7 @@ mod test {
             }
         }
 
-        let markdown = format_comparison_markdown(&comparison, Some(20), None);
+        let markdown = format_comparison_markdown(&comparison, &elapsed_diff, None, Some(20), None);
         println!("\n=== Generated Markdown ===\n{}", markdown);
     }
 
@@ -269,9 +286,11 @@ mod test {
         let main_metrics = make_metrics(main_data, 120000000);
 
         let comparison = compare_metrics(&main_metrics, &pr_metrics);
+        let elapsed_diff =
+            MetricDiff::DurationNs(main_metrics.total_elapsed_ns, pr_metrics.total_elapsed_ns);
 
         println!("\n=== Test Removed Function ===");
-        println!("Total elapsed time diff: {}", comparison.total_elapsed_diff);
+        println!("Total elapsed time diff: {}", elapsed_diff);
 
         for function_diff in &comparison.function_diffs {
             println!(
@@ -283,7 +302,7 @@ mod test {
             }
         }
 
-        let markdown = format_comparison_markdown(&comparison, Some(20), None);
+        let markdown = format_comparison_markdown(&comparison, &elapsed_diff, None, Some(20), None);
         println!("\n=== Generated Markdown ===\n{}", markdown);
 
         assert!(comparison
@@ -311,9 +330,11 @@ mod test {
         let main_metrics = make_metrics(main_data, 120000000);
 
         let comparison = compare_metrics(&main_metrics, &pr_metrics);
+        let elapsed_diff =
+            MetricDiff::DurationNs(main_metrics.total_elapsed_ns, pr_metrics.total_elapsed_ns);
 
         println!("\n=== Test New Function ===");
-        println!("Total elapsed time diff: {}", comparison.total_elapsed_diff);
+        println!("Total elapsed time diff: {}", elapsed_diff);
 
         for function_diff in &comparison.function_diffs {
             println!(
@@ -325,7 +346,7 @@ mod test {
             }
         }
 
-        let markdown = format_comparison_markdown(&comparison, Some(20), None);
+        let markdown = format_comparison_markdown(&comparison, &elapsed_diff, None, Some(20), None);
         println!("\n=== Generated Markdown ===\n{}", markdown);
 
         assert!(comparison
@@ -349,9 +370,11 @@ mod test {
         let main_metrics = make_metrics(main_data, 120000000);
 
         let comparison = compare_metrics(&main_metrics, &pr_metrics);
+        let elapsed_diff =
+            MetricDiff::DurationNs(main_metrics.total_elapsed_ns, pr_metrics.total_elapsed_ns);
 
         println!("\n=== Test New and Removed Functions ===");
-        println!("Total elapsed time diff: {}", comparison.total_elapsed_diff);
+        println!("Total elapsed time diff: {}", elapsed_diff);
 
         for function_diff in &comparison.function_diffs {
             println!(
@@ -360,7 +383,7 @@ mod test {
             );
         }
 
-        let markdown = format_comparison_markdown(&comparison, Some(20), None);
+        let markdown = format_comparison_markdown(&comparison, &elapsed_diff, None, Some(20), None);
         println!("\n=== Generated Markdown ===\n{}", markdown);
 
         assert_eq!(comparison.function_diffs.len(), 3);
