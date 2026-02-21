@@ -28,8 +28,9 @@ just compare main feature_branch
 Benchmarks two versions of the library (branch names or commit SHAs are supported) and saves performance reports in `tmp/before.txt` and `tmp/after.txt`. If contributing any performance-related change please include both reports in the PR.
 
 - `HOTPATH_TUI_TAB` - set values from 1 to 6, to open a different TUI tab and execute different codepaths in the benchmark (default `1`)
-- `HOTPATH_BENCH_RELEASE` - set to `true` to run benchmarks with a `release` profile (default `false`)
+- `HOTPATH_BENCH_RELEASE` - set to `true` to run benchmarks with `--release` profile (default `false`)
 - `HOTPATH_TUI_REFRESH_INTERVAL_MS` - configure data refresh interval, lower values will produce more data (default `10`)
+- `HOTPATH_META_FOCUS` - filter which methods appear in the benchmark report by name. Plain text does substring matching; wrap in `/pattern/` for regex (e.g. `HOTPATH_META_FOCUS="/^(compute|process)/"`).
 
 ## Running documentation server
 

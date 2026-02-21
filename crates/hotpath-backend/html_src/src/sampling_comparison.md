@@ -1,4 +1,4 @@
-# Instrumentation vs sampling: choosing a Rust performance profiler
+# Instrumentation vs sampling and flame graphs: choosing a Rust performance profiler
 
 _Reading time: {{ #reading_time }}_
 
@@ -285,8 +285,9 @@ In the following sections, you’ll learn how to instrument the key parts of you
 
 - [Profiling modes](./profiling_modes.html) - static reports vs live TUI dashboard
 - [Functions](./functions.html) - measure execution time and memory allocations
-- [Futures](./futures.html) - monitor async code, poll counts, and resolved values
-- [Channels](./channels.html) - track messages flow and throughput
-- [Streams](./streams.html) - instrument async streams
+- [Async Data Flow](./data_flow.html) - monitor channels, streams, and futures
 - [Threads](./threads.html) - monitor threads usage
+- [Tokio Runtime](./tokio_runtime.html) - track Tokio runtime metrics
+- [MCP integration](./mcp.html) - AI tool integration
 - [GitHub CI integration](./github_ci.html) - benchmark PRs automatically
+- [Configuration](./configuration.html) - customize profiling behavior
