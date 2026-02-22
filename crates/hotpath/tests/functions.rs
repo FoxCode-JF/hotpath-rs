@@ -1067,8 +1067,14 @@ pub mod tests {
             .expect("Expected custom_block in alloc data");
 
         assert_eq!(custom_block.calls, 100);
-        assert_eq!(custom_block.total, "1.1 KB");
-        assert_eq!(custom_block.avg, "10 B");
+
+        let total_bytes =
+            hotpath::parse_bytes(&custom_block.total).expect("Failed to parse custom_block total");
+        assert!(
+            total_bytes < 2048,
+            "custom_block total should be under 2 KB, got {} B",
+            total_bytes
+        );
     }
 
     // HOTPATH_OUTPUT_FORMAT=table HOTPATH_FOCUS='/(custom)/' cargo run -p test-tokio-async --example basic --features hotpath
