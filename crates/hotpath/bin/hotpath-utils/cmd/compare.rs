@@ -70,10 +70,7 @@ fn print_diff(diff: &JsonReportDiff) {
     let colors = use_colors();
 
     if let Some(comparison) = &diff.functions_timing {
-        println!(
-            "Functions Timing ({} - {})",
-            comparison.profiling_mode, comparison.description
-        );
+        println!("{} - {}", comparison.profiling_mode, comparison.description);
         if comparison.function_diffs.is_empty() {
             println!("No functions to compare.");
         } else {
@@ -83,10 +80,7 @@ fn print_diff(diff: &JsonReportDiff) {
     }
 
     if let Some(comparison) = &diff.functions_alloc {
-        println!(
-            "Functions Alloc ({} - {})",
-            comparison.profiling_mode, comparison.description
-        );
+        println!("{} - {}", comparison.profiling_mode, comparison.description);
         if comparison.function_diffs.is_empty() {
             println!("No functions to compare.");
         } else {

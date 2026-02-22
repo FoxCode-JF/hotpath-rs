@@ -151,7 +151,7 @@ fn format_diff_markdown(
 
     if let Some(comparison) = &diff.functions_timing {
         markdown.push_str(&format!(
-            "\n#### Timing ({} - {})\n",
+            "\n#### {} - {}\n",
             comparison.profiling_mode, comparison.description
         ));
         if comparison.function_diffs.is_empty() {
@@ -166,7 +166,7 @@ fn format_diff_markdown(
 
     if let Some(comparison) = &diff.functions_alloc {
         markdown.push_str(&format!(
-            "\n#### Allocations ({} - {})\n",
+            "\n#### {} - {}\n",
             comparison.profiling_mode, comparison.description
         ));
         if comparison.function_diffs.is_empty() {
