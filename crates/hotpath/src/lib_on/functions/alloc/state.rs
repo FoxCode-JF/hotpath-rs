@@ -131,6 +131,8 @@ pub struct FunctionStats {
     bytes_total_hist: Option<Histogram<u64>>,
     count_total_hist: Option<Histogram<u64>>,
     duration_hist: Option<Histogram<u64>>,
+    pub total_bytes_sum: u64,
+    pub total_count_sum: u64,
     pub total_duration_ns: u64,
     pub has_data: bool,
     pub is_async: bool,
@@ -192,6 +194,8 @@ impl FunctionStats {
             bytes_total_hist: Some(bytes_total_hist),
             count_total_hist: Some(count_total_hist),
             duration_hist: Some(duration_hist),
+            total_bytes_sum: bytes_total.unwrap_or(0),
+            total_count_sum: count_total.unwrap_or(0),
             total_duration_ns: duration_ns,
             has_data: true,
             is_async: bytes_total.is_none(),
@@ -245,6 +249,8 @@ impl FunctionStats {
     ) {
         self.count += 1;
         self.is_async |= bytes_total.is_none();
+        self.total_bytes_sum += bytes_total.unwrap_or(0);
+        self.total_count_sum += count_total.unwrap_or(0);
         self.record_alloc(bytes_total, count_total);
 
         let duration_ns = duration.as_nanos() as u64;
@@ -291,38 +297,28 @@ impl FunctionStats {
 
     #[inline]
     pub fn total_bytes(&self) -> u64 {
-        if self.count == 0 || self.bytes_total_hist.is_none() {
-            return 0;
-        }
-        let hist = self.bytes_total_hist.as_ref().unwrap();
-        let mean = hist.mean();
-        (mean * self.count as f64) as u64
+        self.total_bytes_sum
     }
 
     #[inline]
     pub fn avg_bytes(&self) -> u64 {
-        if self.count == 0 || self.bytes_total_hist.is_none() {
+        if self.count == 0 {
             return 0;
         }
-        self.bytes_total_hist.as_ref().unwrap().mean() as u64
+        self.total_bytes_sum / self.count
     }
 
     #[inline]
     pub fn total_count(&self) -> u64 {
-        if self.count == 0 || self.count_total_hist.is_none() {
-            return 0;
-        }
-        let hist = self.count_total_hist.as_ref().unwrap();
-        let mean = hist.mean();
-        (mean * self.count as f64) as u64
+        self.total_count_sum
     }
 
     #[inline]
     pub fn avg_count(&self) -> u64 {
-        if self.count == 0 || self.count_total_hist.is_none() {
+        if self.count == 0 {
             return 0;
         }
-        self.count_total_hist.as_ref().unwrap().mean() as u64
+        self.total_count_sum / self.count
     }
 
     #[inline]

@@ -1027,6 +1027,50 @@ pub mod tests {
         );
     }
 
+    // cargo run -p test-tokio-async --example basic --features hotpath,hotpath-alloc
+    #[test]
+    fn test_alloc_total_bytes_not_inflated() {
+        use hotpath::json::JsonFunctionsList;
+
+        let output = Command::new("cargo")
+            .args([
+                "run",
+                "-p",
+                "test-tokio-async",
+                "--example",
+                "basic",
+                "--features",
+                "hotpath,hotpath-alloc",
+            ])
+            .output()
+            .expect("Failed to execute command");
+
+        assert!(
+            output.status.success(),
+            "Process did not exit successfully.\n\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        let root: serde_json::Value =
+            serde_json::from_str(stdout.lines().last().expect("no output"))
+                .expect("Failed to parse JSON output");
+
+        let alloc: JsonFunctionsList = serde_json::from_value(root["functions_alloc"].clone())
+            .expect("Failed to parse functions_alloc");
+
+        let custom_block = alloc
+            .data
+            .iter()
+            .find(|f| f.name == "custom_block")
+            .expect("Expected custom_block in alloc data");
+
+        assert_eq!(custom_block.calls, 100);
+        assert_eq!(custom_block.total, "1.1 KB");
+        assert_eq!(custom_block.avg, "10 B");
+    }
+
     // HOTPATH_OUTPUT_FORMAT=table HOTPATH_FOCUS='/(custom)/' cargo run -p test-tokio-async --example basic --features hotpath
     #[test]
     fn test_focus_regex_filter() {

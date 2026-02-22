@@ -157,7 +157,7 @@ cargo run --features='hotpath,hotpath-alloc'
 
 ### Async functions
 
-Allocation profiling uses thread-local storage to track memory usage. Since async tasks can migrate between threads, allocation counts for async functions would be inaccurate and it currently not supported. 
+Allocation profiling uses thread-local storage to track memory usage. Since async tasks can migrate between threads, allocation counts for async functions would be inaccurate and is currently not supported. 
 
 ## Memory profiling modes
 
