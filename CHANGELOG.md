@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2026-02-23
+
+### 🚀 Features
+
+- Add G gg navigation
+- Add JsonReport and parsing methods
+- Remove raw json values
+- Add hotpath-ci compare feature
+- Rename hotpath-ci to hotpath-utils
+- Integrate compare script with hotpath-utils
+- Display diff labels
+- Display thread metrics diff
+- Show threads total alloc diff
+- Add table header colors
+- Add colors to compare report
+
+### 🐛 Bug Fixes
+
+- Publish meta crates
+- Adjust tui profiling limit
+- Shorten diff report functions names
+- Improve diff report display
+- Disable async alloc tracking in current_thread runtime
+- Fix inflated alloc total
+- Alloc measurement for cross thread guard
+- Test_alloc_total_bytes_not_inflated test
+- Fix profile-pr for new reports format
+- Compare uniq threads by name
+- Threads diff render
+- Improve report desc
+
+### 🚜 Refactor
+
+- Cleanup compare metric tests
+
+### ⚡ Performance
+
+- Prebuild backend regexp
+
+### ⚙️ Miscellaneous Tasks
+
+- Test inline(always)
+- Sync meta crate
+- Add bench_docs script
+- Sync hotpath-meta
+- Release 0.12.0
+
 ## [0.11.0] - 2026-02-18
 
 ### 🚀 Features
