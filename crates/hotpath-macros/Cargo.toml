@@ -22,4 +22,4 @@ quote = { workspace = true, optional = true }
 syn = { workspace = true, optional = true }
 
 [package.metadata.docs.rs]
-features = ["hotpath"]
+features = ["hotpath", "hotpath-alloc"]
