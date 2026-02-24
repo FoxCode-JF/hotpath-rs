@@ -139,4 +139,17 @@ threads - Thread CPU and memory statistics. (RSS: 7.8 MB, Alloc: 2.1 MB, Dealloc
 +--------------+----------+------+------+----------+---------+-----------+----------+----------+----------+
 ```
 
+## Full documentation
+
 See the full docs and advanced config tutorials at [hotpath.rs](https://hotpath.rs).
+
+- [Sampling Comparison](https://hotpath.rs/sampling_comparison) - when to use `hotpath` vs CPU sampling profilers
+- [Profiling modes](https://hotpath.rs/profiling_modes) - static reports vs live TUI dashboard
+- [Functions](https://hotpath.rs/functions) - measure execution time and memory allocations
+- [Async Data Flow](https://hotpath.rs/data_flow) - monitor channels, streams, and futures
+- [Debug & Metrics](https://hotpath.rs/debug) - track custom values with `dbg!`, `val!`, and `gauge!` macros
+- [Threads](https://hotpath.rs/threads) - monitor threads usage
+- [Tokio Runtime](https://hotpath.rs/tokio_runtime) - monitor Tokio runtime worker stats and task scheduling
+- [MCP Server](https://hotpath.rs/mcp) - LLM integration via Model Context Protocol
+- [GitHub CI](https://hotpath.rs/github_ci) - automated benchmarking and regression detection in CI
+- [Configuration](https://hotpath.rs/configuration) - explore all config options
