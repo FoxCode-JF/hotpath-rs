@@ -360,7 +360,7 @@ pub(crate) fn get_sorted_stream_stats() -> Vec<StreamStats> {
     stats
 }
 
-pub fn get_streams_json() -> JsonStreamsList {
+pub(crate) fn get_streams_json() -> JsonStreamsList {
     let streams = get_sorted_stream_stats()
         .iter()
         .map(JsonStreamEntry::from)
@@ -378,7 +378,7 @@ pub fn get_streams_json() -> JsonStreamsList {
     }
 }
 
-pub fn get_stream_logs(stream_id: &str) -> Option<StreamLogs> {
+pub(crate) fn get_stream_logs(stream_id: &str) -> Option<StreamLogs> {
     let id = stream_id.parse::<u32>().ok()?;
     let state = STREAMS_STATE.get()?;
     let streams_data = state.stats_map.read().unwrap();

@@ -118,14 +118,14 @@ impl GaugeHandle {
     }
 }
 
-pub fn get_debug_gauge_entries_json() -> Vec<JsonDebugEntry> {
+pub(crate) fn get_debug_gauge_entries_json() -> Vec<JsonDebugEntry> {
     crate::debug::get_sorted_debug_gauge_entries()
         .iter()
         .map(JsonDebugEntry::from)
         .collect()
 }
 
-pub fn get_debug_gauge_logs(id: u32) -> Option<JsonDebugGaugeLogs> {
+pub(crate) fn get_debug_gauge_logs(id: u32) -> Option<JsonDebugGaugeLogs> {
     let current_elapsed_ns = START_TIME
         .get()
         .map(|t| t.elapsed().as_nanos() as u64)

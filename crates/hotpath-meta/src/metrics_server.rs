@@ -1,4 +1,6 @@
-use crate::debug::{get_dbg_logs, get_debug_entries_json, get_debug_gauge_logs, get_val_logs};
+use crate::debug::dbg::{get_dbg_logs, get_debug_entries_json};
+use crate::debug::gauge::get_debug_gauge_logs;
+use crate::debug::val::get_val_logs;
 use crate::functions::{
     get_function_logs_alloc, get_function_logs_timing, get_functions_alloc_json,
     get_functions_timing_json,

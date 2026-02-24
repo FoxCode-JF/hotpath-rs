@@ -367,7 +367,7 @@ pub(crate) fn get_sorted_future_stats() -> Vec<FutureEntry> {
     stats
 }
 
-pub fn get_futures_json() -> JsonFuturesList {
+pub(crate) fn get_futures_json() -> JsonFuturesList {
     let futures = get_sorted_future_stats()
         .iter()
         .map(JsonFutureEntry::from)
@@ -384,7 +384,7 @@ pub fn get_futures_json() -> JsonFuturesList {
     }
 }
 
-pub fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
+pub(crate) fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
     let state = FUTURES_STATE.get()?;
     let futures_data = state.stats_map.read().unwrap();
     futures_data.get(&future_id).map(|s| FutureLogsList {

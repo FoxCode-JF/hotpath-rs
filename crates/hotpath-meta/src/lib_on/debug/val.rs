@@ -52,7 +52,7 @@ impl ValHandle {
     }
 }
 
-pub fn get_val_stats_json() -> JsonDebugList {
+pub(crate) fn get_val_stats_json() -> JsonDebugList {
     let stats = get_sorted_debug_val_entries();
     let formatted: Vec<JsonDebugEntry> = stats.iter().map(JsonDebugEntry::from).collect();
 
@@ -67,7 +67,7 @@ pub fn get_val_stats_json() -> JsonDebugList {
     }
 }
 
-pub fn get_val_logs(id: u32) -> Option<JsonDebugValLogs> {
+pub(crate) fn get_val_logs(id: u32) -> Option<JsonDebugValLogs> {
     let current_elapsed_ns = START_TIME
         .get()
         .map(|t| t.elapsed().as_nanos() as u64)
