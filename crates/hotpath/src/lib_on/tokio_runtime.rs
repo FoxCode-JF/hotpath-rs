@@ -12,7 +12,7 @@ const DEFAULT_RUNTIME_INTERVAL_MS: u64 = 1000;
 pub fn init_runtime_monitoring(handle: &Handle) {
     let handle = handle.clone();
     RUNTIME_STATE.get_or_init(|| {
-        let interval_ms = std::env::var("HOTPATH_TOKIO_RUNTIME_INTERVAL")
+        let interval_ms = std::env::var("HOTPATH_TOKIO_RUNTIME_INTERVAL_MS")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(DEFAULT_RUNTIME_INTERVAL_MS);

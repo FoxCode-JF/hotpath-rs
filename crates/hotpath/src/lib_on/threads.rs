@@ -60,7 +60,7 @@ const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 1000;
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn init_threads_monitoring() {
     THREADS_STATE.get_or_init(|| {
-        let sample_interval_ms = std::env::var("HOTPATH_THREADS_INTERVAL")
+        let sample_interval_ms = std::env::var("HOTPATH_THREADS_INTERVAL_MS")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(DEFAULT_SAMPLE_INTERVAL_MS);
