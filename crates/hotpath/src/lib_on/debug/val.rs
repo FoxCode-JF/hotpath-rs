@@ -10,10 +10,9 @@ use std::time::Instant;
 
 use crate::channels::{extract_filename, START_TIME};
 use crate::debug::{
-    get_or_create_val_id, get_sorted_debug_val_entries, init_debug_state, send_debug_event,
-    DebugEvent, ValEntry,
+    get_or_create_val_id, init_debug_state, send_debug_event, DebugEvent, ValEntry,
 };
-use crate::json::{format_time_ago, JsonDebugEntry, JsonDebugList, JsonDebugLog, JsonDebugValLogs};
+use crate::json::{format_time_ago, JsonDebugEntry, JsonDebugLog, JsonDebugValLogs};
 use crate::output::format_duration;
 
 fn get_thread_id() -> Option<u64> {
@@ -50,22 +49,6 @@ impl ValHandle {
             timestamp,
             tid,
         });
-    }
-}
-
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
-pub(crate) fn get_val_stats_json() -> JsonDebugList {
-    let stats = get_sorted_debug_val_entries();
-    let formatted: Vec<JsonDebugEntry> = stats.iter().map(JsonDebugEntry::from).collect();
-
-    let current_elapsed_ns = START_TIME
-        .get()
-        .map(|t| t.elapsed().as_nanos() as u64)
-        .unwrap_or(0);
-
-    JsonDebugList {
-        current_elapsed_ns,
-        entries: formatted,
     }
 }
 
