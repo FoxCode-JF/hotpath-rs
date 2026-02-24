@@ -14,8 +14,8 @@ pub(crate) mod wrapper;
 
 use crate::channels::resolve_label;
 use crate::data_flow::{WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS};
+use crate::json::JsonStreamEntry;
 pub use crate::json::{ChannelState, DataFlowLogEntry, StreamLogs};
-use crate::json::{JsonStreamEntry, JsonStreamsList};
 use crate::metrics_server::METRICS_SERVER_PORT;
 pub use crate::Format;
 
@@ -358,24 +358,6 @@ pub(crate) fn get_sorted_stream_stats() -> Vec<StreamStats> {
     let mut stats: Vec<StreamStats> = get_all_stream_stats().into_values().collect();
     stats.sort_by(compare_stream_stats);
     stats
-}
-
-pub(crate) fn get_streams_json() -> JsonStreamsList {
-    let streams = get_sorted_stream_stats()
-        .iter()
-        .map(JsonStreamEntry::from)
-        .collect();
-
-    let current_elapsed_ns = crate::lib_on::START_TIME
-        .get()
-        .expect("START_TIME must be initialized")
-        .elapsed()
-        .as_nanos() as u64;
-
-    JsonStreamsList {
-        current_elapsed_ns,
-        data: streams,
-    }
 }
 
 pub(crate) fn get_stream_logs(stream_id: &str) -> Option<StreamLogs> {

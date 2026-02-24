@@ -18,8 +18,8 @@ pub(crate) mod wrapper;
 
 pub use wrapper::{InstrumentedFuture, InstrumentedFutureLog};
 
+use crate::json::JsonFutureEntry;
 pub use crate::json::{FutureLog, FutureLogsList, FutureState};
-use crate::json::{JsonFutureEntry, JsonFuturesList};
 pub use crate::Format;
 
 pub(crate) static FUTURE_CALL_ID_COUNTER: AtomicU32 = AtomicU32::new(1);
@@ -365,23 +365,6 @@ pub(crate) fn get_sorted_future_stats() -> Vec<FutureEntry> {
     let mut stats: Vec<FutureEntry> = get_all_future_stats().into_values().collect();
     stats.sort_by(compare_future_stats);
     stats
-}
-
-pub(crate) fn get_futures_json() -> JsonFuturesList {
-    let futures = get_sorted_future_stats()
-        .iter()
-        .map(JsonFutureEntry::from)
-        .collect();
-
-    let current_elapsed_ns = START_TIME
-        .get()
-        .map(|t| t.elapsed().as_nanos() as u64)
-        .unwrap_or(0);
-
-    JsonFuturesList {
-        current_elapsed_ns,
-        data: futures,
-    }
 }
 
 pub(crate) fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {

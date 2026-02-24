@@ -15,7 +15,7 @@ mod wrapper;
 use std::mem;
 
 use crate::data_flow::{next_data_flow_id, WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS};
-use crate::json::{format_queue_status, JsonChannelEntry, JsonChannelsList};
+use crate::json::{format_queue_status, JsonChannelEntry};
 pub use crate::json::{ChannelLogs, ChannelState, DataFlowLogEntry};
 use crate::metrics_server::METRICS_SERVER_PORT;
 use crate::output::format_bytes;
@@ -645,24 +645,6 @@ pub(crate) fn get_sorted_channel_entries() -> Vec<ChannelEntry> {
     let mut stats: Vec<ChannelEntry> = get_all_channel_stats().into_values().collect();
     stats.sort_by(compare_channel_entries);
     stats
-}
-
-pub(crate) fn get_channels_json() -> JsonChannelsList {
-    let data = get_sorted_channel_entries()
-        .iter()
-        .map(JsonChannelEntry::from)
-        .collect();
-
-    let current_elapsed_ns = START_TIME
-        .get()
-        .expect("START_TIME must be initialized")
-        .elapsed()
-        .as_nanos() as u64;
-
-    JsonChannelsList {
-        current_elapsed_ns,
-        data,
-    }
 }
 
 pub(crate) fn get_channel_logs(channel_id: &str) -> Option<ChannelLogs> {

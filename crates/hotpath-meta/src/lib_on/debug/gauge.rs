@@ -118,6 +118,7 @@ impl GaugeHandle {
     }
 }
 
+#[cfg(feature = "hotpath-mcp-meta")]
 pub(crate) fn get_debug_gauge_entries_json() -> Vec<JsonDebugEntry> {
     crate::debug::get_sorted_debug_gauge_entries()
         .iter()

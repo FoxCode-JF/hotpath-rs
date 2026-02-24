@@ -19,8 +19,8 @@ pub(crate) mod wrapper;
 
 pub use wrapper::{InstrumentedFuture, InstrumentedFutureLog};
 
-pub use crate::json::{FutureLog, FutureLogsList, FutureState};
 use crate::json::JsonFutureEntry;
+pub use crate::json::{FutureLog, FutureLogsList, FutureState};
 pub use crate::Format;
 
 pub(crate) static FUTURE_CALL_ID_COUNTER: AtomicU32 = AtomicU32::new(1);
