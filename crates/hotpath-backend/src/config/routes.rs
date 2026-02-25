@@ -166,9 +166,14 @@ async fn terms_page() -> impl IntoResponse {
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 600px; margin: 80px auto; padding: 0 1rem; color: #c5c5c5; background: #14191f; }
         a { color: #ffb454; }
+        .back { display: inline-block; margin-bottom: 1.5rem; font-size: 0.9rem; text-decoration: none; }
+        .back:hover { text-decoration: underline; }
+        .site-name { font-size: 0.85rem; color: #888; margin-bottom: 0.25rem; }
     </style>
 </head>
 <body>
+    <a href="/" class="back">&larr; Back</a>
+    <p class="site-name">hotpath-rs</p>
     <h1>Terms</h1>
     <p>We use <a href="https://simpleanalytics.com">Simple Analytics</a> to understand how the website is used. Simple Analytics does not use cookies and does not collect any personal data. The data is aggregated and anonymous.</p>
 </body>
