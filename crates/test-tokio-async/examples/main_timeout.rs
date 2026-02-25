@@ -17,7 +17,7 @@ fn second_function(sleep: u64) {
 }
 
 #[tokio::main(flavor = "current_thread")]
-#[hotpath::main(timeout = 1000)]
+#[hotpath::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         first_function(100);

@@ -374,16 +374,10 @@ pub struct FunctionLogsList {
 /// Structured per-function profiling metrics data as an ordered list.
 pub type FunctionsData = Vec<(&'static str, Vec<MetricType>)>;
 
-/// Trait for accessing profiling metrics data from custom reporters.
+/// Trait for accessing profiling metrics data.
 ///
-/// This trait provides a standardized interface for reporters to access profiling
-/// metrics, regardless of the underlying profiling mode (time or allocation tracking).
-/// Implement [`Reporter`] to use this interface for custom output.
-///
-/// # See Also
-///
-/// * [`Reporter`] - Trait for implementing custom reporters
-/// * [`MetricType`] - Metric value types
+/// Provides a standardized interface to access profiling metrics, regardless of
+/// the underlying profiling mode (time or allocation tracking).
 pub trait MetricsProvider<'a> {
     fn description(&self) -> String;
     fn profiling_mode(&self) -> ProfilingMode;

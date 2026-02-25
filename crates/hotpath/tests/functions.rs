@@ -689,6 +689,7 @@ pub mod tests {
                 "--features",
                 "hotpath",
             ])
+            .env("HOTPATH_SHUTDOWN_MS", "1000")
             .output()
             .expect("Failed to execute command");
 
