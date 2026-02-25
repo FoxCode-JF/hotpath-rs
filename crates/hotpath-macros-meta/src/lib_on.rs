@@ -30,9 +30,10 @@ impl Format {
 /// # Parameters
 ///
 /// * `percentiles` - Array of percentile values (0-100) to display in the report. Default: `[95]`
-/// * `format` - Output format as a string: `"table"` (default), `"json"`, or `"json-pretty"`
+/// * `format` - Output format as a string: `"table"` (default), `"json"`, `"json-pretty"`, or `"none"`
 /// * `limit` - Maximum number of functions to display in the report (0 = show all). Default: `15`
-/// * `timeout` - Optional timeout in milliseconds. If specified, the program will print the report and exit after the timeout.
+/// * `output_path` - File path for the report. Defaults to stdout.
+/// * `report` - Comma-separated sections to include.
 ///
 /// # Examples
 ///
@@ -114,7 +115,6 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut percentiles: Vec<u8> = vec![95];
     let mut format = Format::Table;
     let mut functions_limit: usize = 15;
-    let mut timeout: Option<u64> = None;
     let mut output_path: Option<String> = None;
     let mut report_sections: Option<String> = None;
 
@@ -169,13 +169,6 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                 return Ok(());
             }
 
-            if meta.path.is_ident("timeout") {
-                meta.input.parse::<syn::Token![=]>()?;
-                let li: LitInt = meta.input.parse()?;
-                timeout = Some(li.base10_parse()?);
-                return Ok(());
-            }
-
             if meta.path.is_ident("output_path") {
                 meta.input.parse::<syn::Token![=]>()?;
                 let lit: LitStr = meta.input.parse()?;
@@ -191,7 +184,7 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
 
             Err(meta.error(
-                "Unknown parameter. Supported: percentiles=[..], format=\"..\", limit=N, timeout=N, output_path=\"..\", report=\"..\"",
+                "Unknown parameter. Supported: percentiles=[..], format=\"..\", limit=N, output_path=\"..\", report=\"..\"",
             ))
         });
 
@@ -257,28 +250,18 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             #sections_call
     };
 
-    let guard_init = if let Some(timeout_ms) = timeout {
-        quote! {
-            let _hotpath = {
-                #caller_name_init
-                #builder_chain
-                    .build_with_shutdown(std::time::Duration::from_millis(#timeout_ms))
-            };
-        }
-    } else {
-        quote! {
-            let _hotpath: Option<hotpath_meta::HotpathGuard> = {
-                #caller_name_init
-                let builder = #builder_chain;
-                match std::env::var("HOTPATH_META_SHUTDOWN_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
-                    Some(ms) => {
-                        builder.build_with_shutdown(std::time::Duration::from_millis(ms));
-                        None
-                    }
-                    None => Some(builder.build()),
+    let guard_init = quote! {
+        let _hotpath: Option<hotpath_meta::HotpathGuard> = {
+            #caller_name_init
+            let builder = #builder_chain;
+            match std::env::var("HOTPATH_META_SHUTDOWN_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
+                Some(ms) => {
+                    builder.build_with_shutdown(std::time::Duration::from_millis(ms));
+                    None
                 }
-            };
-        }
+                None => Some(builder.build()),
+            }
+        };
     };
 
     let body = quote! {

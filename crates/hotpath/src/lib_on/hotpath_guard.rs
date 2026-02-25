@@ -45,6 +45,26 @@ cfg_if::cfg_if! {
 use crate::functions::MeasurementGuard;
 use crate::Format;
 
+/// Builder for [`HotpathGuard`] — a programmatic alternative to the
+/// `#[hotpath::main]` macro for configuring and initializing the profiler.
+///
+/// Dropping the resulting [`HotpathGuard`] generates the profiling report, so
+/// the guard must be held alive for the duration you want to profile.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use hotpath::{HotpathGuardBuilder, Format, Section};
+///
+/// let _guard = HotpathGuardBuilder::new("main")
+///     .percentiles(&[50, 95, 99])
+///     .with_functions_limit(20)
+///     .with_channels_limit(5)
+///     .format(Format::JsonPretty)
+///     .output_path("report.json")
+///     .with_sections(vec![Section::FunctionsTiming, Section::Channels])
+///     .build();
+/// ```
 #[must_use = "builder is discarded without creating a guard"]
 pub struct HotpathGuardBuilder {
     caller_name: &'static str,
@@ -61,6 +81,23 @@ pub struct HotpathGuardBuilder {
 }
 
 impl HotpathGuardBuilder {
+    /// Creates a new builder.
+    ///
+    /// `caller_name` identifies the top-level wrapper function in reports
+    /// (typically `"main"`).
+    ///
+    /// # Defaults
+    ///
+    /// | Option | Default |
+    /// |---|---|
+    /// | `percentiles` | `[95]` |
+    /// | `format` | [`Format::Table`] |
+    /// | `functions_limit` | `10` |
+    /// | `channels_limit` | `0` (unlimited) |
+    /// | `streams_limit` | `0` (unlimited) |
+    /// | `futures_limit` | `0` (unlimited) |
+    /// | `threads_limit` | `5` |
+    /// | `sections` | `[FunctionsTiming, Threads]` (+ `FunctionsAlloc` with `hotpath-alloc`) |
     pub fn new(caller_name: &'static str) -> Self {
         Self {
             caller_name,
@@ -77,51 +114,61 @@ impl HotpathGuardBuilder {
         }
     }
 
+    /// Sets which latency percentiles to compute (e.g. `&[50, 95, 99]`).
     pub fn percentiles(mut self, percentiles: &[u8]) -> Self {
         self.percentiles = percentiles.to_vec();
         self
     }
 
+    /// Maximum number of functions shown in the report. Set to `0` for unlimited.
     pub fn with_functions_limit(mut self, limit: usize) -> Self {
         self.functions_limit = limit;
         self
     }
 
+    /// Maximum number of channels shown in the report. Set to `0` for unlimited.
     pub fn with_channels_limit(mut self, limit: usize) -> Self {
         self.channels_limit = limit;
         self
     }
 
+    /// Maximum number of streams shown in the report. Set to `0` for unlimited.
     pub fn with_streams_limit(mut self, limit: usize) -> Self {
         self.streams_limit = limit;
         self
     }
 
+    /// Maximum number of futures shown in the report. Set to `0` for unlimited.
     pub fn with_futures_limit(mut self, limit: usize) -> Self {
         self.futures_limit = limit;
         self
     }
 
+    /// Maximum number of threads shown in the report. Set to `0` for unlimited.
     pub fn with_threads_limit(mut self, limit: usize) -> Self {
         self.threads_limit = limit;
         self
     }
 
+    /// Sets the output format. Overridden at runtime by `HOTPATH_OUTPUT_FORMAT` env var.
     pub fn format(mut self, format: Format) -> Self {
         self.format = format;
         self
     }
 
+    /// Writes the report to a file instead of stdout. Overridden by `HOTPATH_OUTPUT_PATH` env var.
     pub fn output_path(mut self, path: impl AsRef<std::path::Path>) -> Self {
         self.output_path = Some(resolve_output_path(path));
         self
     }
 
+    /// Chooses which report sections to include. Overridden by `HOTPATH_REPORT` env var.
     pub fn with_sections(mut self, sections: Vec<Section>) -> Self {
         self.sections = Some(sections);
         self
     }
 
+    /// Registers a callback that runs just before the guard is dropped and the report is generated.
     pub fn before_shutdown(mut self, f: impl FnOnce() + Send + Sync + 'static) -> Self {
         self.before_shutdown = Some(Box::new(f));
         self
@@ -145,6 +192,11 @@ impl HotpathGuardBuilder {
         }
     }
 
+    /// Consumes the builder and initializes the profiler, returning a [`HotpathGuard`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if another `HotpathGuard` is already alive.
     pub fn build(self) -> HotpathGuard {
         let sections = self.resolve_sections();
 
@@ -163,6 +215,11 @@ impl HotpathGuardBuilder {
         )
     }
 
+    /// Builds the guard and moves it to a background thread that keeps it alive.
+    ///
+    /// If `duration` is non-zero (or overridden by `HOTPATH_SHUTDOWN_MS`), the
+    /// process exits after that timeout and the report is printed. Otherwise the
+    /// guard lives until the process exits.
     pub fn build_with_shutdown(self, duration: std::time::Duration) {
         let guard = self.build();
         if let Some(timeout) =
@@ -184,6 +241,10 @@ impl HotpathGuardBuilder {
     }
 }
 
+/// RAII guard that owns the profiler lifetime.
+///
+/// When dropped, it shuts down background workers, collects all measurements,
+/// and writes the profiling report. Create one via [`HotpathGuardBuilder`].
 #[must_use = "guard is dropped immediately without generating a report"]
 pub struct HotpathGuard {
     state: Arc<RwLock<FunctionsState>>,

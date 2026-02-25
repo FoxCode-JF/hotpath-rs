@@ -16,9 +16,10 @@ mod lib_off;
 /// # Parameters
 ///
 /// * `percentiles` - Array of percentile values (0-100) to display in the report. Default: `[95]`
-/// * `format` - Output format as a string: `"table"` (default), `"json"`, or `"json-pretty"`
+/// * `format` - Output format as a string: `"table"` (default), `"json"`, `"json-pretty"`, or `"none"`
 /// * `limit` - Maximum number of functions to display in the report (0 = show all). Default: `15`
-/// * `timeout` - Optional timeout in milliseconds. If specified, the program will print the report and exit after the timeout.
+/// * `output_path` - File path for the report. Defaults to stdout.
+/// * `report` - Comma-separated sections to include.
 ///
 /// # Examples
 ///

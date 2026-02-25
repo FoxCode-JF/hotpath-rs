@@ -8,17 +8,21 @@ mod lib_off;
 
 /// Initializes the hotpath profiling system and generates a performance report on program exit.
 ///
-/// This attribute macro should be applied to your program's main (or other entry point) function to enable profiling.
-/// It creates a guard that initializes the background measurement processing thread and
-/// automatically displays a performance summary when the program exits.
-/// Additionally it creates a measurement guard that will be used to measure the wrapper function itself.
+/// This attribute macro should be applied to your program's main (or other entry point) function
+/// to enable profiling. It creates a guard that initializes the background measurement processing
+/// thread and automatically displays a performance summary when the program exits. Additionally
+/// it creates a measurement guard that will be used to measure the wrapper function itself.
+///
+/// For programmatic control over the same options, see
+/// [`HotpathGuardBuilder`](../hotpath/struct.HotpathGuardBuilder.html).
 ///
 /// # Parameters
 ///
-/// * `percentiles` - Array of percentile values (0-100) to display in the report. Default: `[95]`
-/// * `format` - Output format as a string: `"table"` (default), `"json"`, or `"json-pretty"`
-/// * `limit` - Maximum number of functions to display in the report (0 = show all). Default: `15`
-/// * `timeout` - Optional timeout in milliseconds. If specified, the program will print the report and exit after the timeout.
+/// * `percentiles` - Array of percentile values (0-100) to compute. Default: `[95]`
+/// * `format` - Output format: `"table"` (default), `"json"`, `"json-pretty"`, or `"none"`
+/// * `limit` - Maximum number of functions in the report (0 = unlimited). Default: `15`
+/// * `output_path` - File path for the report. Defaults to stdout. Overridden by `HOTPATH_OUTPUT_PATH` env var.
+/// * `report` - Comma-separated sections to include: `"functions-timing"`, `"functions-alloc"`, `"channels"`, `"streams"`, `"futures"`, `"threads"`, or `"all"`. Overridden by `HOTPATH_REPORT` env var.
 ///
 /// # Examples
 ///
@@ -41,28 +45,19 @@ mod lib_off;
 /// }
 /// ```
 ///
-/// JSON output format:
+/// JSON output to file:
 ///
 /// ```rust,no_run
-/// #[hotpath::main(format = "json-pretty")]
+/// #[hotpath::main(format = "json-pretty", output_path = "report.json")]
 /// fn main() {
 ///     // Your code here
 /// }
 /// ```
 ///
-/// Combined parameters:
+/// Select report sections:
 ///
 /// ```rust,no_run
-/// #[hotpath::main(percentiles = [50, 99], format = "json")]
-/// fn main() {
-///     // Your code here
-/// }
-/// ```
-///
-/// Custom limit (show top 20 functions):
-///
-/// ```rust,no_run
-/// #[hotpath::main(limit = 20)]
+/// #[hotpath::main(report = "functions-timing,channels")]
 /// fn main() {
 ///     // Your code here
 /// }
@@ -89,7 +84,7 @@ mod lib_off;
 ///
 /// * [`measure`](macro@measure) - Attribute macro for instrumenting functions
 /// * [`measure_block!`](../hotpath/macro.measure_block.html) - Macro for measuring code blocks
-/// * [`HotpathGuardBuilder`](../hotpath/struct.HotpathGuardBuilder.html) - Manual control over profiling lifecycle
+/// * [`HotpathGuardBuilder`](../hotpath/struct.HotpathGuardBuilder.html) - Programmatic alternative to this macro
 #[proc_macro_attribute]
 pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(all(feature = "hotpath", not(feature = "hotpath-off")))]
@@ -102,60 +97,44 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Instruments a function to send performance measurements to the hotpath profiler.
+/// Instruments a function to measure execution time or memory allocations.
 ///
-/// This attribute macro wraps functions with profiling code that measures execution time
-/// or memory allocations (depending on enabled feature flags). The measurements are sent
-/// to a background processing thread for aggregation.
+/// Automatically detects sync vs async and inserts the appropriate measurement guard.
+/// Compiles to zero overhead when the `hotpath` feature is disabled.
 ///
-/// # Behavior
+/// # Measurements
 ///
-/// The macro automatically detects whether the function is sync or async and instruments
-/// it appropriately. Measurements include:
-///
-/// * **Time profiling** (default): Execution duration using high-precision timers
-/// * **Allocation profiling**: Memory allocations when allocation features are enabled
-///   - `hotpath-alloc` - Total bytes allocated
-///   - `hotpath-alloc` - Total allocation count
-///
-/// # Async Function Limitations
-///
-/// When using allocation profiling features with async functions, you must use the
-/// `tokio` runtime in `current_thread` mode:
-///
-/// ```rust,no_run
-/// #[tokio::main(flavor = "current_thread")]
-/// async fn main() {
-///     // Your async code here
-/// }
-/// ```
-///
-/// This limitation exists because allocation tracking uses thread-local storage. In multi-threaded
-/// runtimes, async tasks can migrate between threads, making it impossible to accurately
-/// attribute allocations to specific function calls. Time-based profiling works with any runtime flavor.
-///
-/// When the `hotpath` feature is disabled, this macro compiles to zero overhead (no instrumentation).
+/// * **Time profiling** (default) — execution duration via high-precision timers
+/// * **Allocation profiling** (`hotpath-alloc` feature) — bytes allocated and allocation count
 ///
 /// # Parameters
 ///
-/// * `log` - If `true`, logs the result value when the function returns (requires `Debug` on return type)
+/// * `log` - If `true`, logs the return value on each call (requires `Debug` on return type)
 ///
 /// # Examples
 ///
-/// With result logging (requires Debug on return type):
-///
 /// ```rust,no_run
+/// #[hotpath::measure]
+/// fn process(data: &[u8]) -> usize {
+///     data.len()
+/// }
+///
 /// #[hotpath::measure(log = true)]
 /// fn compute() -> i32 {
-///     // The result value will be logged in TUI console
 ///     42
 /// }
 /// ```
 ///
+/// # Async Allocation Limitation
+///
+/// Allocation profiling requires `current_thread` tokio runtime because thread-local
+/// tracking cannot follow tasks across threads. Time profiling works with any runtime.
+///
 /// # See Also
 ///
-/// * [`main`](macro@main) - Attribute macro that initializes profiling
-/// * [`measure_block!`](../hotpath/macro.measure_block.html) - Macro for measuring code blocks
+/// * [`main`](macro@main) - Initializes the profiling system
+/// * [`measure_all`](macro@measure_all) - Bulk instrumentation for modules and impl blocks
+/// * [`measure_block!`](../hotpath/macro.measure_block.html) - Instruments code blocks
 #[proc_macro_attribute]
 pub fn measure(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(all(feature = "hotpath", not(feature = "hotpath-off")))]
@@ -170,40 +149,32 @@ pub fn measure(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Instruments an async function to track its lifecycle as a Future.
 ///
-/// This attribute macro wraps async functions with the `future!` macro, enabling
-/// tracking of poll counts, state transitions (pending/ready/cancelled), and
-/// optionally logging the result value.
+/// Wraps the function body with the `future!` macro to track poll counts,
+/// state transitions (pending/ready/cancelled), and optionally the output value.
+/// Can only be applied to `async fn`.
 ///
 /// # Parameters
 ///
-/// * `log` - If `true`, logs the result value when the future completes (requires `Debug` on return type)
+/// * `log` - If `true`, logs the output value on completion (requires `Debug` on return type)
 ///
 /// # Examples
-///
-/// Basic usage (no Debug requirement on return type):
 ///
 /// ```rust,no_run
 /// #[hotpath::future_fn]
 /// async fn fetch_data() -> Vec<u8> {
-///     // This future's lifecycle will be tracked
 ///     vec![1, 2, 3]
 /// }
-/// ```
 ///
-/// With result logging (requires Debug on return type):
-///
-/// ```rust,no_run
 /// #[hotpath::future_fn(log = true)]
 /// async fn compute() -> i32 {
-///     // The result value will be logged in TUI console
 ///     42
 /// }
 /// ```
 ///
 /// # See Also
 ///
-/// * [`measure`](macro@measure) - Attribute macro for instrumenting sync/async function timing
-/// * [`future!`](../hotpath/macro.future.html) - Declarative macro for instrumenting future expressions
+/// * [`measure`](macro@measure) - Instruments execution time / allocations
+/// * [`future!`](../hotpath/macro.future.html) - Declarative macro for wrapping future expressions
 #[proc_macro_attribute]
 pub fn future_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(all(feature = "hotpath", not(feature = "hotpath-off")))]
