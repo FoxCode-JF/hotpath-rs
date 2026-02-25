@@ -1031,7 +1031,7 @@ pub mod tests {
     // cargo run -p test-tokio-async --example basic --features hotpath,hotpath-alloc
     #[test]
     fn test_alloc_total_bytes_not_inflated() {
-        use hotpath::json::JsonFunctionsList;
+        use hotpath::json::JsonReport;
 
         let output = Command::new("cargo")
             .args([
@@ -1054,12 +1054,12 @@ pub mod tests {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
 
-        let root: serde_json::Value =
-            serde_json::from_str(stdout.lines().last().expect("no output"))
-                .expect("Failed to parse JSON output");
+        let report: JsonReport = serde_json::from_str(stdout.lines().last().expect("no output"))
+            .expect("Failed to parse JSON output");
 
-        let alloc: JsonFunctionsList = serde_json::from_value(root["functions_alloc"].clone())
-            .expect("Failed to parse functions_alloc");
+        let alloc = report
+            .functions_alloc
+            .expect("Expected functions_alloc in report");
 
         let custom_block = alloc
             .data
@@ -1122,5 +1122,66 @@ pub mod tests {
                 "{not_exp} should be filtered out by HOTPATH_FOCUS=/(custom)/\n\nGot:\n{stdout}"
             );
         }
+    }
+
+    // cargo run -p test-tokio-async --example alloc_measure --features hotpath,hotpath-alloc
+    #[test]
+    fn test_alloc_uninstrumented_children_tracked() {
+        use hotpath::json::JsonReport;
+
+        let output = Command::new("cargo")
+            .args([
+                "run",
+                "-p",
+                "test-tokio-async",
+                "--example",
+                "alloc_measure",
+                "--features",
+                "hotpath,hotpath-alloc",
+            ])
+            .env("HOTPATH_OUTPUT_FORMAT", "json")
+            .env("HOTPATH_METRICS_SERVER_OFF", "true")
+            .output()
+            .expect("Failed to execute command");
+
+        assert!(
+            output.status.success(),
+            "Process did not exit successfully.\n\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let report: JsonReport = serde_json::from_str(stdout.lines().last().expect("no output"))
+            .expect("Failed to parse JSON output");
+
+        let alloc = report
+            .functions_alloc
+            .expect("Expected functions_alloc in report");
+
+        let find = |name: &str| -> &hotpath::json::JsonFunctionEntry {
+            alloc
+                .data
+                .iter()
+                .find(|f| f.name.ends_with(&format!("::{name}")))
+                .unwrap_or_else(|| panic!("Expected {name} in alloc data"))
+        };
+
+        let assert_bytes = |name: &str, expected: u64| {
+            let entry = find(name);
+            let bytes = hotpath::parse_bytes(&entry.total)
+                .unwrap_or_else(|| panic!("Failed to parse total for {name}: {}", entry.total));
+            assert_eq!(
+                bytes, expected,
+                "{name}: expected {expected} B, got {bytes} B"
+            );
+        };
+
+        assert_bytes("uninstrumented_children_2kb", 2048);
+        assert_bytes("own_1kb_plus_uninstrumented_child_1kb", 2048);
+        assert_bytes(
+            "own_1kb_plus_uninstrumented_1kb_plus_instrumented_1kb",
+            3072,
+        );
+        assert_bytes("instrumented_1kb", 1024);
     }
 }
