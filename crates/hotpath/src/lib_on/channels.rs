@@ -469,29 +469,19 @@ cfg_if::cfg_if! {
 }
 
 /// Instrument a channel creation to wrap it with debugging proxies.
-/// Currently only supports bounded, unbounded and oneshot channels.
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust,no_run
 /// use tokio::sync::mpsc;
-/// use channels_console::channel;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///    // Create channels normally
-///    let (tx, rx) = mpsc::channel::<String>(100);
+///    let (tx, rx) = hotpath::channel!(mpsc::channel::<String>(100));
 ///
-///    // Instrument them only when the feature is enabled
-///    #[cfg(feature = "hotpath")]
-///    let (tx, rx) = channels_console::channel!((tx, rx));
-///
-///    // The channel works exactly the same way
 ///    tx.send("Hello".to_string()).await.unwrap();
 /// }
 /// ```
-///
-/// See the `channel!` macro documentation for full usage details.
 #[macro_export]
 macro_rules! channel {
     ($expr:expr) => {{
@@ -584,7 +574,7 @@ macro_rules! channel {
     ($expr:expr, label = $label:expr, log = true, capacity = $capacity:expr) => {{
         const CHANNEL_ID: &'static str = concat!(file!(), ":", line!());
         const _: usize = $capacity;
-        $crate::InstrumentLog::instrument_log(
+        $crate::InstrumentChannelLog::instrument_log(
             $expr,
             CHANNEL_ID,
             Some($label.to_string()),
@@ -606,7 +596,7 @@ macro_rules! channel {
     ($expr:expr, capacity = $capacity:expr, log = true, label = $label:expr) => {{
         const CHANNEL_ID: &'static str = concat!(file!(), ":", line!());
         const _: usize = $capacity;
-        $crate::InstrumentLog::instrument_log(
+        $crate::InstrumentChannelLog::instrument_log(
             $expr,
             CHANNEL_ID,
             Some($label.to_string()),
@@ -617,7 +607,7 @@ macro_rules! channel {
     ($expr:expr, log = true, label = $label:expr, capacity = $capacity:expr) => {{
         const CHANNEL_ID: &'static str = concat!(file!(), ":", line!());
         const _: usize = $capacity;
-        $crate::InstrumentLog::instrument_log(
+        $crate::InstrumentChannelLog::instrument_log(
             $expr,
             CHANNEL_ID,
             Some($label.to_string()),
@@ -628,7 +618,7 @@ macro_rules! channel {
     ($expr:expr, log = true, capacity = $capacity:expr, label = $label:expr) => {{
         const CHANNEL_ID: &'static str = concat!(file!(), ":", line!());
         const _: usize = $capacity;
-        $crate::InstrumentLog::instrument_log(
+        $crate::InstrumentChannelLog::instrument_log(
             $expr,
             CHANNEL_ID,
             Some($label.to_string()),
