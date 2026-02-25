@@ -156,8 +156,8 @@ impl ChannelEntry {
             type_name,
             type_size,
             max_queued: 0,
-            sent_logs: VecDeque::new(),
-            received_logs: VecDeque::new(),
+            sent_logs: VecDeque::with_capacity(*LOGS_LIMIT),
+            received_logs: VecDeque::with_capacity(*LOGS_LIMIT),
             iter,
         }
     }

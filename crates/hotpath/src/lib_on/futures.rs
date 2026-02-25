@@ -72,7 +72,7 @@ impl FutureEntry {
             id,
             source,
             label,
-            logs: VecDeque::new(),
+            logs: VecDeque::with_capacity(*LOGS_LIMIT),
             logs_count: 0,
         }
     }

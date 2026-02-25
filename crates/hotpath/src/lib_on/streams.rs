@@ -12,7 +12,7 @@ use std::time::Instant;
 
 pub(crate) mod wrapper;
 
-use crate::channels::resolve_label;
+use crate::channels::{resolve_label, LOGS_LIMIT};
 use crate::data_flow::{WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS};
 use crate::json::JsonStreamEntry;
 pub use crate::json::{ChannelState, DataFlowLogEntry, StreamLogs};
@@ -51,7 +51,7 @@ impl StreamStats {
             items_yielded: 0,
             type_name,
             type_size,
-            logs: VecDeque::new(),
+            logs: VecDeque::with_capacity(*LOGS_LIMIT),
             iter,
         }
     }

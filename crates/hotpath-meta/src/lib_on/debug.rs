@@ -72,7 +72,7 @@ impl DbgEntry {
             source,
             expression,
             log_count: 0,
-            logs: VecDeque::new(),
+            logs: VecDeque::with_capacity(*LOGS_LIMIT),
         }
     }
 }
@@ -100,7 +100,7 @@ impl ValEntry {
             id,
             key,
             log_count: 0,
-            logs: VecDeque::new(),
+            logs: VecDeque::with_capacity(*LOGS_LIMIT),
         }
     }
 }

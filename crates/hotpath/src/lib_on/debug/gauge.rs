@@ -10,7 +10,7 @@ use quanta::Instant;
 #[cfg(not(target_os = "linux"))]
 use std::time::Instant;
 
-use crate::channels::{extract_filename, START_TIME};
+use crate::channels::{extract_filename, LOGS_LIMIT, START_TIME};
 use crate::debug::{get_or_create_gauge_id, init_debug_state, send_debug_event, DebugEvent};
 use crate::json::{format_time_ago, JsonDebugEntry, JsonDebugGaugeLogs, JsonDebugLog};
 use crate::output::format_duration;
@@ -50,7 +50,7 @@ impl GaugeEntry {
             min_value: initial_value,
             max_value: initial_value,
             update_count: 0,
-            logs: VecDeque::new(),
+            logs: VecDeque::with_capacity(*LOGS_LIMIT),
         }
     }
 }
