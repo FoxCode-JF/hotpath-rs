@@ -39,14 +39,29 @@ impl<'a> MetricsProvider<'a> for StatsData<'a> {
     }
 
     fn profiling_mode(&self) -> ProfilingMode {
-        ProfilingMode::Alloc
+        use crate::lib_on::functions::alloc::shared::{alloc_metric, AllocMetric};
+        match alloc_metric() {
+            AllocMetric::Bytes => ProfilingMode::AllocBytes,
+            AllocMetric::Count => ProfilingMode::AllocCount,
+        }
     }
 
     fn description(&self) -> String {
+        use crate::lib_on::functions::alloc::shared::{alloc_metric, AllocMetric};
+        let metric = match alloc_metric() {
+            AllocMetric::Bytes => "bytes",
+            AllocMetric::Count => "count",
+        };
         if super::shared::is_alloc_self_enabled() {
-            "Exclusive allocations by each function (excluding nested calls).".to_string()
+            format!(
+                "Exclusive allocation {} by each function (excluding nested calls).",
+                metric
+            )
         } else {
-            "Cumulative allocations during each function call (including nested calls).".to_string()
+            format!(
+                "Cumulative allocation {} during each function call (including nested calls).",
+                metric
+            )
         }
     }
 
@@ -62,7 +77,18 @@ impl<'a> MetricsProvider<'a> for StatsData<'a> {
     }
 
     fn metric_data(&self) -> Vec<(&'static str, Vec<MetricType>)> {
+        use crate::lib_on::functions::alloc::shared::{alloc_metric, AllocMetric};
+
         let exclude_wrapper = *crate::functions::EXCLUDE_WRAPPER;
+        let use_count = alloc_metric() == AllocMetric::Count;
+
+        let primary_value = |s: &FunctionStats| -> u64 {
+            if use_count {
+                s.total_count()
+            } else {
+                s.total_bytes()
+            }
+        };
 
         let mut entries: Vec<_> = self
             .stats
@@ -71,8 +97,8 @@ impl<'a> MetricsProvider<'a> for StatsData<'a> {
             .collect();
 
         entries.sort_by(|a, b| {
-            b.total_bytes()
-                .cmp(&a.total_bytes())
+            primary_value(b)
+                .cmp(&primary_value(a))
                 .then_with(|| a.name.cmp(b.name))
         });
 
@@ -82,30 +108,30 @@ impl<'a> MetricsProvider<'a> for StatsData<'a> {
             entries
         };
 
-        let grand_total_bytes: u64 = if *crate::functions::EXCLUDE_WRAPPER {
+        let grand_total: u64 = if *crate::functions::EXCLUDE_WRAPPER {
             self.stats
                 .values()
                 .filter(|s| !s.wrapper && s.has_data)
-                .map(|s| s.total_bytes())
+                .map(|s| primary_value(s))
                 .sum()
         } else if super::shared::is_alloc_self_enabled() {
             self.stats
                 .values()
                 .filter(|s| s.has_data)
-                .map(|s| s.total_bytes())
+                .map(|s| primary_value(s))
                 .sum()
         } else {
-            let wrapper_total_bytes = self
+            let wrapper_total = self
                 .stats
                 .values()
                 .find(|s| s.wrapper && s.has_data)
-                .map(|s| s.total_bytes());
+                .map(|s| primary_value(s));
 
-            wrapper_total_bytes.unwrap_or_else(|| {
+            wrapper_total.unwrap_or_else(|| {
                 self.stats
                     .values()
                     .filter(|s| s.has_data)
-                    .map(|s| s.total_bytes())
+                    .map(|s| primary_value(s))
                     .sum()
             })
         };
@@ -113,8 +139,8 @@ impl<'a> MetricsProvider<'a> for StatsData<'a> {
         entries
             .into_iter()
             .map(|stats| {
-                let percentage = if grand_total_bytes > 0 {
-                    (stats.total_bytes() as f64 / grand_total_bytes as f64) * 100.0
+                let percentage = if grand_total > 0 {
+                    (primary_value(stats) as f64 / grand_total as f64) * 100.0
                 } else {
                     0.0
                 };
