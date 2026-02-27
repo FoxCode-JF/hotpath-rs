@@ -19,24 +19,27 @@ use std::io::Write;
 use crate::json::{JsonCpuBaseline, JsonFunctionsList, JsonReport};
 use crate::metrics_server::METRICS_SERVER_PORT;
 use crate::output::{
-    format_duration, resolve_output_path, FunctionLog, FunctionLogsList, MetricsProvider,
-    OutputDestination,
+    format_duration, resolve_output_path, FunctionLog, FunctionLogsList, OutputDestination,
 };
-use crate::output_on::{display_no_measurements_message_to, display_table_to, write_report_header};
+use crate::output_on::{
+    display_functions_table_to, display_no_measurements_message_to, write_report_header,
+};
 
 use crate::functions::{FunctionsQuery, FUNCTIONS_QUERY_TX, FUNCTIONS_STATE};
 use crate::lib_on::report;
 use crate::shared::Section;
 
+use crate::functions::StatsConfig;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "hotpath-alloc-meta")] {
         use crate::functions::alloc::{
-            report::{StatsData, TimingStatsData},
+            report::{build_functions_list_alloc, build_functions_list_timing},
             state::{FunctionStats, FunctionsState, Measurement, process_measurement, flush_batch},
         };
     } else {
         use crate::functions::timing::{
-            report::StatsData,
+            report::build_functions_list,
             state::{FunctionStats, FunctionsState, Measurement, process_measurement, flush_batch},
         };
     }
@@ -267,20 +270,21 @@ impl HotpathGuard {
                         }
                         recv(query_rx) -> result => {
                             if let Ok(query_request) = result {
+                                let config = StatsConfig {
+                                    total_elapsed: worker_start_time.elapsed(),
+                                    percentiles: worker_percentiles.clone(),
+                                    caller_name: worker_caller_name,
+                                    limit: worker_limit,
+                                };
+                                let current_elapsed_ns = config.total_elapsed.as_nanos() as u64;
+
                                 match query_request {
                                     FunctionsQuery::Alloc(response_tx) => {
                                         cfg_if::cfg_if! {
                                             if #[cfg(feature = "hotpath-alloc-meta")] {
-                                                let total_elapsed = worker_start_time.elapsed();
-                                                let current_elapsed_ns = total_elapsed.as_nanos() as u64;
-                                                let provider = StatsData::new(
-                                                    &local_stats,
-                                                    total_elapsed,
-                                                    worker_percentiles.clone(),
-                                                    worker_caller_name,
-                                                    worker_limit,
+                                                let formatted = build_functions_list_alloc(
+                                                    &local_stats, &config, current_elapsed_ns,
                                                 );
-                                                let formatted = JsonFunctionsList::from_provider(&provider, current_elapsed_ns);
                                                 let _ = response_tx.send(Some(formatted));
                                             } else {
                                                 let _ = response_tx.send(None);
@@ -290,31 +294,16 @@ impl HotpathGuard {
                                     FunctionsQuery::Timing(response_tx) => {
                                         cfg_if::cfg_if! {
                                             if #[cfg(feature = "hotpath-alloc-meta")] {
-                                                let total_elapsed = worker_start_time.elapsed();
-                                                let current_elapsed_ns = total_elapsed.as_nanos() as u64;
-                                                let provider = TimingStatsData::new(
-                                                    &local_stats,
-                                                    total_elapsed,
-                                                    worker_percentiles.clone(),
-                                                    worker_caller_name,
-                                                    worker_limit,
+                                                let formatted = build_functions_list_timing(
+                                                    &local_stats, &config, current_elapsed_ns,
                                                 );
-                                                let formatted = JsonFunctionsList::from_provider(&provider, current_elapsed_ns);
-                                                let _ = response_tx.send(formatted);
                                             } else {
-                                                let total_elapsed = worker_start_time.elapsed();
-                                                let current_elapsed_ns = total_elapsed.as_nanos() as u64;
-                                                let provider = StatsData::new(
-                                                    &local_stats,
-                                                    total_elapsed,
-                                                    worker_percentiles.clone(),
-                                                    worker_caller_name,
-                                                    worker_limit,
+                                                let formatted = build_functions_list(
+                                                    &local_stats, &config, current_elapsed_ns,
                                                 );
-                                                let formatted = JsonFunctionsList::from_provider(&provider, current_elapsed_ns);
-                                                let _ = response_tx.send(formatted);
                                             }
                                         }
+                                        let _ = response_tx.send(formatted);
                                     }
                                     FunctionsQuery::LogsTiming { function_id, response_tx } => {
                                         let response = local_stats.get(&function_id)
@@ -457,6 +446,29 @@ fn apply_limit(len: usize, limit: usize) -> usize {
     }
 }
 
+fn make_config(state_guard: &FunctionsState, total_elapsed: std::time::Duration) -> StatsConfig {
+    StatsConfig {
+        total_elapsed,
+        percentiles: state_guard.percentiles.clone(),
+        caller_name: state_guard.caller_name,
+        limit: state_guard.limit,
+    }
+}
+
+fn build_timing_list(
+    stats: &HashMap<u32, FunctionStats>,
+    config: &StatsConfig,
+    elapsed_ns: u64,
+) -> JsonFunctionsList {
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "hotpath-alloc-meta")] {
+            build_functions_list_timing(stats, config, elapsed_ns)
+        } else {
+            build_functions_list(stats, config, elapsed_ns)
+        }
+    }
+}
+
 impl Drop for HotpathGuard {
     fn drop(&mut self) {
         if let Some(f) = self.before_shutdown.take() {
@@ -546,29 +558,9 @@ impl Drop for HotpathGuard {
                             if let Ok(state_guard) = state.read() {
                                 let total_elapsed = end_time.duration_since(state_guard.start_time);
                                 let elapsed_ns = total_elapsed.as_nanos() as u64;
-
-                                cfg_if::cfg_if! {
-                                    if #[cfg(feature = "hotpath-alloc-meta")] {
-                                        let provider = TimingStatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
-                                    } else {
-                                        let provider = StatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
-                                    }
-                                }
-
+                                let config = make_config(&state_guard, total_elapsed);
                                 report.functions_timing =
-                                    Some(JsonFunctionsList::from_provider(&provider, elapsed_ns));
+                                    Some(build_timing_list(stats, &config, elapsed_ns));
                             }
                         }
                     }
@@ -579,15 +571,9 @@ impl Drop for HotpathGuard {
                                     if let Ok(state_guard) = state.read() {
                                         let total_elapsed = end_time.duration_since(state_guard.start_time);
                                         let elapsed_ns = total_elapsed.as_nanos() as u64;
-                                        let provider = StatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
+                                        let config = make_config(&state_guard, total_elapsed);
                                         report.functions_alloc = Some(
-                                            JsonFunctionsList::from_provider(&provider, elapsed_ns),
+                                            build_functions_list_alloc(stats, &config, elapsed_ns),
                                         );
                                     }
                                 }
@@ -677,37 +663,20 @@ impl Drop for HotpathGuard {
                         if let Some(ref stats) = functions_stats {
                             if let Ok(state_guard) = state.read() {
                                 let total_elapsed = end_time.duration_since(state_guard.start_time);
-
-                                cfg_if::cfg_if! {
-                                    if #[cfg(feature = "hotpath-alloc-meta")] {
-                                        let provider = TimingStatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
-                                    } else {
-                                        let provider = StatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
-                                    }
-                                }
+                                let config = make_config(&state_guard, total_elapsed);
+                                let elapsed_ns = total_elapsed.as_nanos() as u64;
+                                let list = build_timing_list(stats, &config, elapsed_ns);
 
                                 match format {
                                     Format::Table => {
-                                        if provider.metric_data().is_empty() {
+                                        if list.data.is_empty() {
                                             display_no_measurements_message_to(
                                                 &mut writer,
                                                 total_elapsed,
                                                 state_guard.caller_name,
                                             );
                                         } else {
-                                            display_table_to(&mut writer, &provider);
+                                            display_functions_table_to(&mut writer, &list);
                                         }
                                     }
                                     Format::None => {}
@@ -722,24 +691,20 @@ impl Drop for HotpathGuard {
                                 if let Some(ref stats) = functions_stats {
                                     if let Ok(state_guard) = state.read() {
                                         let total_elapsed = end_time.duration_since(state_guard.start_time);
-                                        let provider = StatsData::new(
-                                            stats,
-                                            total_elapsed,
-                                            state_guard.percentiles.clone(),
-                                            state_guard.caller_name,
-                                            state_guard.limit,
-                                        );
+                                        let config = make_config(&state_guard, total_elapsed);
+                                        let elapsed_ns = total_elapsed.as_nanos() as u64;
+                                        let list = build_functions_list_alloc(stats, &config, elapsed_ns);
 
                                         match format {
                                             Format::Table => {
-                                                if provider.metric_data().is_empty() {
+                                                if list.data.is_empty() {
                                                     display_no_measurements_message_to(
                                                         &mut writer,
                                                         total_elapsed,
                                                         state_guard.caller_name,
                                                     );
                                                 } else {
-                                                    display_table_to(&mut writer, &provider);
+                                                    display_functions_table_to(&mut writer, &list);
                                                 }
                                             }
                                             Format::None => {}
