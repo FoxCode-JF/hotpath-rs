@@ -291,6 +291,7 @@ impl std::fmt::Write for TruncatingWriter {
 }
 
 #[cfg(feature = "hotpath")]
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 pub fn format_debug_truncated(value: &impl std::fmt::Debug) -> String {
     use std::fmt::Write;
     let limit = MAX_LOG_LEN.saturating_sub(3);
