@@ -13,7 +13,7 @@ use quanta::Instant;
 #[cfg(not(target_os = "linux"))]
 use std::time::Instant;
 
-use crate::data_flow::{WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS};
+use crate::data_flow::{WORKER_BATCH_SIZE, WORKER_FLUSH_INTERVAL_MS, WORKER_SHUTDOWN_DRAIN_LIMIT};
 
 pub(crate) mod wrapper;
 
@@ -239,11 +239,19 @@ pub fn init_futures_state() {
                             }
                         }
                         recv(shutdown_rx) -> _ => {
+                            let mut drained_events = Vec::with_capacity(WORKER_BATCH_SIZE);
+                            for _ in 0..WORKER_SHUTDOWN_DRAIN_LIMIT {
+                                match event_rx.try_recv() {
+                                    Ok(event) => drained_events.push(event),
+                                    Err(_) => break,
+                                }
+                            }
+
                             if let Ok(mut shared) = inner_clone.write() {
                                 for e in local_buffer.drain(..) {
                                     process_future_event(&mut shared, e);
                                 }
-                                while let Ok(event) = event_rx.try_recv() {
+                                for event in drained_events {
                                     process_future_event(&mut shared, event);
                                 }
                             }
