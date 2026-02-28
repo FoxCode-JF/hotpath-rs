@@ -212,7 +212,14 @@ sudo mkdir -p /run/sshd && sudo chmod 755 /run/sshd
 
 ## Deploy Hotpath Binary
 
-After building hotpath from `/root/hotpath-rs/`:
+Build from `/root/hotpath-rs/`:
+
+```bash
+RUSTFLAGS="--cfg tokio_unstable" cargo install --path . --features='tui,hotpath,hotpath-alloc'
+```
+
+and run:
+
 ```bash
 cp /root/.cargo/bin/hotpath /usr/local/bin/hotpath && sudo systemctl restart tuihost
 ```
