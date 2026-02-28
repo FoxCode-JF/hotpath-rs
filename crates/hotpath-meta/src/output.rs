@@ -72,17 +72,6 @@ pub fn format_bytes(bytes: u64) -> String {
     }
 }
 
-/// Formats an allocation count as a string.
-pub fn format_count(count: u64) -> String {
-    count.to_string()
-}
-
-/// Parses a count string back to a u64.
-/// Inverse of [`format_count`].
-pub fn parse_count(s: &str) -> Option<u64> {
-    s.trim().parse::<u64>().ok()
-}
-
 /// Parses a human-readable byte string back to a byte count.
 /// Inverse of [`format_bytes`].
 pub fn parse_bytes(s: &str) -> Option<u64> {
@@ -112,6 +101,17 @@ pub fn parse_bytes(s: &str) -> Option<u64> {
     } else {
         None
     }
+}
+
+/// Formats an allocation count as a string.
+pub fn format_count(count: u64) -> String {
+    count.to_string()
+}
+
+/// Parses a count string back to a u64.
+/// Inverse of [`format_count`].
+pub fn parse_count(s: &str) -> Option<u64> {
+    s.trim().parse::<u64>().ok()
 }
 
 /// Profiling mode indicating what type of measurements were collected.

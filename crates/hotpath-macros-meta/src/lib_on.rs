@@ -32,8 +32,8 @@ impl Format {
 /// * `percentiles` - Array of percentile values (0-100) to display in the report. Default: `[95]`
 /// * `format` - Output format as a string: `"table"` (default), `"json"`, `"json-pretty"`, or `"none"`
 /// * `limit` - Maximum number of functions to display in the report (0 = show all). Default: `15`
-/// * `output_path` - File path for the report. Defaults to stdout.
-/// * `report` - Comma-separated sections to include.
+/// * `output_path` - File path for the report. Defaults to stdout. Overridden by `HOTPATH_META_OUTPUT_PATH` env var.
+/// * `report` - Comma-separated sections to include. Overridden by `HOTPATH_META_REPORT` env var.
 ///
 /// # Examples
 ///
@@ -118,7 +118,7 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut output_path: Option<String> = None;
     let mut report_sections: Option<String> = None;
 
-    // Parse named args like: percentiles=[..], format=".."
+    // Parse named args like: percentiles=[..], format="..", report=".."
     if !attr.is_empty() {
         let parser = syn::meta::parser(|meta| {
             if meta.path.is_ident("percentiles") {
@@ -204,36 +204,33 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         None => quote! {},
     };
 
-    let sections_call = match &report_sections {
-        Some(sections_str) => {
-            let section_tokens: Vec<proc_macro2::TokenStream> = sections_str
-                .split(',')
-                .filter_map(|s| {
-                    let trimmed = s.trim();
-                    if trimmed == "all" {
-                        return None;
-                    }
-                    match trimmed {
-                        "functions-timing" => Some(quote!(hotpath_meta::Section::FunctionsTiming)),
-                        "functions-alloc" => Some(quote!(hotpath_meta::Section::FunctionsAlloc)),
-                        "channels" => Some(quote!(hotpath_meta::Section::Channels)),
-                        "streams" => Some(quote!(hotpath_meta::Section::Streams)),
-                        "futures" => Some(quote!(hotpath_meta::Section::Futures)),
-                        "threads" => Some(quote!(hotpath_meta::Section::Threads)),
-                        _ => None,
-                    }
-                })
-                .collect();
+    let sections_call = if let Some(ref report_str) = report_sections {
+        let section_tokens: Vec<proc_macro2::TokenStream> = report_str
+            .split(',')
+            .filter_map(|s| {
+                let s = s.trim();
+                match s {
+                    "functions-timing" => Some(quote! { hotpath_meta::Section::FunctionsTiming }),
+                    "functions-alloc" => Some(quote! { hotpath_meta::Section::FunctionsAlloc }),
+                    "channels" => Some(quote! { hotpath_meta::Section::Channels }),
+                    "streams" => Some(quote! { hotpath_meta::Section::Streams }),
+                    "futures" => Some(quote! { hotpath_meta::Section::Futures }),
+                    "threads" => Some(quote! { hotpath_meta::Section::Threads }),
+                    "all" => None, // handled separately
+                    _ => None,
+                }
+            })
+            .collect();
 
-            if sections_str.split(',').any(|s| s.trim() == "all") {
-                quote! { .with_sections(hotpath_meta::Section::all()) }
-            } else if !section_tokens.is_empty() {
-                quote! { .with_sections(vec![#(#section_tokens),*]) }
-            } else {
-                quote! {}
-            }
+        if report_str.split(',').any(|s| s.trim() == "all") {
+            quote! { .with_sections(hotpath_meta::Section::all()) }
+        } else if !section_tokens.is_empty() {
+            quote! { .with_sections(vec![#(#section_tokens),*]) }
+        } else {
+            quote! {}
         }
-        None => quote! {},
+    } else {
+        quote! {}
     };
 
     let caller_name_init = quote! {

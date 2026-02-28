@@ -58,7 +58,7 @@ const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 1000;
 // Call it unless you use channel!, stream!, or #[hotpath_meta::main] macro elsewhere in the code
 pub(crate) fn init_threads_monitoring() {
     THREADS_STATE.get_or_init(|| {
-        let sample_interval_ms = std::env::var("HOTPATH_META_THREADS_INTERVAL")
+        let sample_interval_ms = std::env::var("HOTPATH_META_THREADS_INTERVAL_MS")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(DEFAULT_SAMPLE_INTERVAL_MS);

@@ -61,6 +61,7 @@ pub(crate) struct FutureEntry {
     pub(crate) label: Option<String>,
     pub(crate) logs_count: u64,
     pub(crate) total_poll_count: u64,
+    pub(crate) total_poll_duration_ns: u64,
 }
 
 impl FutureEntry {
@@ -71,12 +72,16 @@ impl FutureEntry {
             label,
             logs_count: 0,
             total_poll_count: 0,
+            total_poll_duration_ns: 0,
         }
     }
 
-    /// Total polls across all invocations
     pub(crate) fn total_polls(&self) -> u64 {
         self.total_poll_count
+    }
+
+    pub(crate) fn total_poll_duration_ns(&self) -> u64 {
+        self.total_poll_duration_ns
     }
 }
 
@@ -113,6 +118,7 @@ impl From<&FutureEntry> for JsonFutureEntry {
             has_custom_label: stats.label.is_some(),
             call_count: stats.logs_count,
             total_polls: stats.total_polls(),
+            total_poll_duration_ns: stats.total_poll_duration_ns(),
         }
     }
 }
@@ -141,6 +147,7 @@ pub(crate) enum FutureEvent {
         call_id: u32,
         result: PollResult,
         log_message: Option<String>,
+        poll_duration_ns: u64,
     },
     Completed {
         future_id: u32,
@@ -289,13 +296,20 @@ fn process_future_event(state: &mut FuturesInternalState, event: FutureEvent) {
             call_id,
             result,
             log_message,
+            poll_duration_ns,
         } => {
             if let Some(future_stats) = state.stats.get_mut(&future_id) {
                 future_stats.total_poll_count += 1;
+                future_stats.total_poll_duration_ns += poll_duration_ns;
             }
             if let Some(entry_logs) = state.logs.get_mut(&future_id) {
                 if let Some(call) = entry_logs.find_call_mut(call_id) {
                     call.poll_count += 1;
+                    call.total_poll_duration_ns += poll_duration_ns;
+                    call.last_poll_duration_ns = poll_duration_ns;
+                    if poll_duration_ns > call.max_poll_duration_ns {
+                        call.max_poll_duration_ns = poll_duration_ns;
+                    }
                     match result {
                         PollResult::Pending => {
                             call.state = FutureState::Suspended;
@@ -401,8 +415,12 @@ pub(crate) fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
     let state = FUTURES_STATE.get()?;
     let guard = state.inner.read().unwrap();
     let entry_logs = guard.logs.get(&future_id)?;
+    let stats = guard.stats.get(&future_id);
     Some(FutureLogsList {
         id: future_id.to_string(),
+        call_count: stats.map_or(0, |s| s.logs_count),
+        total_polls: stats.map_or(0, |s| s.total_polls()),
+        total_poll_duration_ns: stats.map_or(0, |s| s.total_poll_duration_ns()),
         calls: entry_logs.logs.iter().rev().cloned().collect(),
     })
 }
