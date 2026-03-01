@@ -292,7 +292,7 @@ impl std::fmt::Write for TruncatingWriter {
 
 #[cfg(feature = "hotpath-meta")]
 pub fn format_debug_truncated(value: &impl std::fmt::Debug) -> String {
-    crate::lib_on::suspend_alloc_tracking();
+    let _suspend = crate::lib_on::SuspendAllocTracking::new();
     use std::fmt::Write;
     let limit = MAX_LOG_LEN.saturating_sub(3);
     let mut writer = TruncatingWriter {
@@ -306,9 +306,7 @@ pub fn format_debug_truncated(value: &impl std::fmt::Debug) -> String {
         writer.buf.push_str("...");
     }
 
-    let output = writer.buf;
-    crate::lib_on::resume_alloc_tracking();
-    output
+    writer.buf
 }
 
 pub fn shorten_function_name(function_name: &str) -> String {

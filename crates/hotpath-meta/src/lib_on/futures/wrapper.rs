@@ -113,7 +113,7 @@ impl<F: Future> InstrumentedFuture<F> {
         alloc_bridge: Option<Arc<AsyncAllocBridge>>,
         visible: bool,
     ) -> Self {
-        crate::lib_on::suspend_alloc_tracking();
+        let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
         let (future_id, call_id) = if visible {
             let (future_id, is_new) = get_or_create_future_id(location);
@@ -136,7 +136,7 @@ impl<F: Future> InstrumentedFuture<F> {
             (0, 0)
         };
 
-        crate::lib_on::resume_alloc_tracking();
+        drop(_suspend);
 
         Self {
             inner,
@@ -158,10 +158,11 @@ impl<F: Future> Future for InstrumentedFuture<F> {
         let call_id = *this.call_id;
         let visible = *this.visible;
 
-        crate::lib_on::suspend_alloc_tracking();
-        let instrumented_waker = create_instrumented_waker(cx.waker());
+        let instrumented_waker = {
+            let _suspend = crate::lib_on::SuspendAllocTracking::new();
+            create_instrumented_waker(cx.waker())
+        };
         let mut instrumented_cx = Context::from_waker(&instrumented_waker);
-        crate::lib_on::resume_alloc_tracking();
 
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
@@ -183,30 +184,31 @@ impl<F: Future> Future for InstrumentedFuture<F> {
             }
         };
 
-        crate::lib_on::suspend_alloc_tracking();
-        send_future_event(
-            visible,
-            FutureEvent::Polled {
-                future_id,
-                call_id,
-                result: poll_result,
-                poll_duration_ns,
-                poll_alloc_bytes,
-                poll_alloc_count,
-            },
-        );
-
-        if *this.completed {
+        {
+            let _suspend = crate::lib_on::SuspendAllocTracking::new();
             send_future_event(
                 visible,
-                FutureEvent::Completed {
+                FutureEvent::Polled {
                     future_id,
                     call_id,
-                    log_message: None,
+                    result: poll_result,
+                    poll_duration_ns,
+                    poll_alloc_bytes,
+                    poll_alloc_count,
                 },
             );
+
+            if *this.completed {
+                send_future_event(
+                    visible,
+                    FutureEvent::Completed {
+                        future_id,
+                        call_id,
+                        log_message: None,
+                    },
+                );
+            }
         }
-        crate::lib_on::resume_alloc_tracking();
 
         result
     }
@@ -249,7 +251,7 @@ impl<F: Future> InstrumentedFutureLog<F> {
         alloc_bridge: Option<Arc<AsyncAllocBridge>>,
         visible: bool,
     ) -> Self {
-        crate::lib_on::suspend_alloc_tracking();
+        let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
         let (future_id, call_id) = if visible {
             let (future_id, is_new) = get_or_create_future_id(location);
@@ -272,7 +274,7 @@ impl<F: Future> InstrumentedFutureLog<F> {
             (0, 0)
         };
 
-        crate::lib_on::resume_alloc_tracking();
+        drop(_suspend);
 
         Self {
             inner,
@@ -297,10 +299,11 @@ where
         let call_id = *this.call_id;
         let visible = *this.visible;
 
-        crate::lib_on::suspend_alloc_tracking();
-        let instrumented_waker = create_instrumented_waker(cx.waker());
+        let instrumented_waker = {
+            let _suspend = crate::lib_on::SuspendAllocTracking::new();
+            create_instrumented_waker(cx.waker())
+        };
         let mut instrumented_cx = Context::from_waker(&instrumented_waker);
-        crate::lib_on::resume_alloc_tracking();
 
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
@@ -322,30 +325,31 @@ where
             }
         };
 
-        crate::lib_on::suspend_alloc_tracking();
-        send_future_event(
-            visible,
-            FutureEvent::Polled {
-                future_id,
-                call_id,
-                result: poll_result,
-                poll_duration_ns,
-                poll_alloc_bytes,
-                poll_alloc_count,
-            },
-        );
-
-        if *this.completed {
+        {
+            let _suspend = crate::lib_on::SuspendAllocTracking::new();
             send_future_event(
                 visible,
-                FutureEvent::Completed {
+                FutureEvent::Polled {
                     future_id,
                     call_id,
-                    log_message,
+                    result: poll_result,
+                    poll_duration_ns,
+                    poll_alloc_bytes,
+                    poll_alloc_count,
                 },
             );
+
+            if *this.completed {
+                send_future_event(
+                    visible,
+                    FutureEvent::Completed {
+                        future_id,
+                        call_id,
+                        log_message,
+                    },
+                );
+            }
         }
-        crate::lib_on::resume_alloc_tracking();
 
         result
     }

@@ -74,7 +74,7 @@ fn send_alloc_measurement(
     wrapper: bool,
     tid: Option<u64>,
 ) {
-    crate::lib_on::suspend_alloc_tracking();
+    let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
     crate::functions::alloc::state::send_alloc_measurement(
         name,
@@ -84,8 +84,6 @@ fn send_alloc_measurement(
         wrapper,
         tid,
     );
-
-    crate::lib_on::resume_alloc_tracking();
 }
 
 #[inline]
@@ -98,7 +96,7 @@ fn send_alloc_measurement_with_log(
     tid: Option<u64>,
     result_log: Option<String>,
 ) {
-    crate::lib_on::suspend_alloc_tracking();
+    let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
     crate::functions::alloc::state::send_alloc_measurement_with_log(
         name,
@@ -109,8 +107,6 @@ fn send_alloc_measurement_with_log(
         tid,
         result_log,
     );
-
-    crate::lib_on::resume_alloc_tracking();
 }
 
 #[must_use = "guard is dropped immediately without measuring anything"]
