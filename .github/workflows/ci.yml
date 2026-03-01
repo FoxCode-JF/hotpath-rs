@@ -81,6 +81,9 @@ jobs:
       - name: Run CLI tests
         run: |
           cargo test -p hotpath --bin hotpath --features=tui
+      - name: Run guards tests
+        run: |
+          cargo test --features hotpath --test guards -- --nocapture --test-threads=1
       - name: Run functions tests
         run: |
           cargo test --features hotpath --test functions -- --nocapture --test-threads=1
