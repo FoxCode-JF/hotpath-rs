@@ -41,26 +41,26 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "hotpath-alloc")] {
         #[global_allocator]
         static GLOBAL: functions::alloc::allocator::CountingAllocator = functions::alloc::allocator::CountingAllocator {};
+    }
+}
 
-        #[inline]
-        pub(crate) fn suspend_alloc_tracking() {
-            functions::alloc::core::ALLOCATIONS.with(|stack| {
-                stack.tracking_enabled.set(false);
-            });
-        }
+#[must_use = "guard is dropped immediately without suspending tracking"]
+pub(crate) struct SuspendAllocTracking;
 
-        #[inline]
-        pub(crate) fn resume_alloc_tracking() {
-            functions::alloc::core::ALLOCATIONS.with(|stack| {
-                stack.tracking_enabled.set(true);
-            });
-        }
-    } else {
-        #[inline]
-        pub(crate) fn suspend_alloc_tracking() {}
+impl SuspendAllocTracking {
+    #[inline]
+    pub(crate) fn new() -> Self {
+        #[cfg(feature = "hotpath-alloc")]
+        functions::alloc::core::suspend_alloc_tracking();
+        Self
+    }
+}
 
-        #[inline]
-        pub(crate) fn resume_alloc_tracking() {}
+impl Drop for SuspendAllocTracking {
+    #[inline]
+    fn drop(&mut self) {
+        #[cfg(feature = "hotpath-alloc")]
+        functions::alloc::core::resume_alloc_tracking();
     }
 }
 

@@ -149,3 +149,17 @@ pub(crate) fn track_dealloc(size: usize) {
         }
     }
 }
+
+#[inline]
+pub(crate) fn suspend_alloc_tracking() {
+    ALLOCATIONS.with(|stack| {
+        stack.tracking_enabled.set(false);
+    });
+}
+
+#[inline]
+pub(crate) fn resume_alloc_tracking() {
+    ALLOCATIONS.with(|stack| {
+        stack.tracking_enabled.set(true);
+    });
+}

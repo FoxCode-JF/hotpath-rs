@@ -279,7 +279,7 @@ impl HotpathGuard {
         futures_limit: usize,
         threads_limit: usize,
     ) -> Self {
-        crate::lib_on::suspend_alloc_tracking();
+        let _suspend = crate::lib_on::SuspendAllocTracking::new();
         #[cfg(feature = "hotpath-alloc")]
         crate::functions::alloc::core::init_thread_alloc_tracking();
 
@@ -503,7 +503,7 @@ impl HotpathGuard {
 
         let wrapper_guard = crate::functions::build_measurement_guard_sync(caller_name, true);
 
-        crate::lib_on::resume_alloc_tracking();
+        drop(_suspend);
 
         Self {
             state: Arc::clone(&state_arc),
