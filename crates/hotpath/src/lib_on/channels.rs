@@ -51,19 +51,28 @@ pub(crate) fn register_channel<T>(
     let state = init_channels_state();
     let id = next_data_flow_id();
 
-    let _ = state.event_tx.send(ChannelEvent::Created {
-        id,
-        source,
-        display_label: label,
-        channel_type,
-        type_name,
-        type_size: mem::size_of::<T>(),
-    });
+    send_channel_event(
+        &state.event_tx,
+        ChannelEvent::Created {
+            id,
+            source,
+            display_label: label,
+            channel_type,
+            type_name,
+            type_size: mem::size_of::<T>(),
+        },
+    );
 
     RegisteredChannel {
         id,
         stats_tx: state.event_tx.clone(),
     }
+}
+
+#[inline]
+pub(crate) fn send_channel_event(stats_tx: &CbSender<ChannelEvent>, event: ChannelEvent) {
+    let _suspend = crate::lib_on::SuspendAllocTracking::new();
+    let _ = stats_tx.send(event);
 }
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]

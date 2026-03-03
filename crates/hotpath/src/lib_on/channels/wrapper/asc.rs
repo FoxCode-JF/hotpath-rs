@@ -1,7 +1,7 @@
 use async_channel::{Receiver, Sender};
 
 use crate::channels::{
-    register_channel, ChannelEvent, ChannelType, Instant, RegisteredChannel, RT,
+    register_channel, send_channel_event, ChannelEvent, ChannelType, Instant, RegisteredChannel, RT,
 };
 
 /// Internal implementation for wrapping bounded async channels with optional logging.
@@ -30,13 +30,13 @@ where
                     match msg {
                         Ok(msg) => {
                             let log = log_on_send(&msg);
-                            let _ = stats_tx.send(ChannelEvent::MessageSent {
+                            send_channel_event(&stats_tx, ChannelEvent::MessageSent {
                                 id,
                                 log,
                                 timestamp: Instant::now(),
                             });
                             if proxy_tx.send(msg).await.is_ok() {
-                                let _ = stats_tx.send(ChannelEvent::MessageReceived {
+                                send_channel_event(&stats_tx, ChannelEvent::MessageReceived {
                                     id,
                                     timestamp: Instant::now(),
                                 });
@@ -54,7 +54,7 @@ where
                 }
             }
         }
-        let _ = stats_tx.send(ChannelEvent::Closed { id });
+        send_channel_event(&stats_tx, ChannelEvent::Closed { id });
     });
 
     // User sends to inner_tx directly, receives from proxy_rx
@@ -110,13 +110,13 @@ where
                     match msg {
                         Ok(msg) => {
                             let log = log_on_send(&msg);
-                            let _ = stats_tx.send(ChannelEvent::MessageSent {
+                            send_channel_event(&stats_tx, ChannelEvent::MessageSent {
                                 id,
                                 log,
                                 timestamp: Instant::now(),
                             });
                             if proxy_tx.send(msg).await.is_ok() {
-                                let _ = stats_tx.send(ChannelEvent::MessageReceived {
+                                send_channel_event(&stats_tx, ChannelEvent::MessageReceived {
                                     id,
                                     timestamp: Instant::now(),
                                 });
@@ -134,7 +134,7 @@ where
                 }
             }
         }
-        let _ = stats_tx.send(ChannelEvent::Closed { id });
+        send_channel_event(&stats_tx, ChannelEvent::Closed { id });
     });
 
     (inner_tx, proxy_rx)
