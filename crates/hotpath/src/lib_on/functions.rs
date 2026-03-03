@@ -64,6 +64,7 @@ static FOCUS_FILTER: LazyLock<Option<Focus>> = LazyLock::new(|| {
     }
 });
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 #[inline]
 fn is_focused(name: &str) -> bool {
     match &*FOCUS_FILTER {
