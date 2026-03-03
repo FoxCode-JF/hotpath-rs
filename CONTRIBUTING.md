@@ -17,17 +17,25 @@ A full copy is needed because a crate cannot depend on itself. Extracting shared
 
 Install [just](https://github.com/casey/just) and run:
 
-```
+```bash
 just bench_meta
 ```
 
 Starts a hotpath TUI for 5 seconds, gathers performance metrics and prints the report on exit. 
 
+To benchmark across git commits first build `hotpath-utils` CLI:
+
+```bash
+cargo build --bin hotpath-utils --features=utils
 ```
+
+Now run:
+
+```bash
 just compare_meta main feature_branch
 ```
 
-Benchmarks two versions of the library (branch names or commit SHAs are supported) and saves performance reports in `tmp/before.txt` and `tmp/after.txt`. If contributing any performance-related change please include both reports in the PR.
+It benchmarks two versions of the library (branch names or commit SHAs are supported) and saves performance reports in `tmp/before.txt` and `tmp/after.txt`. If contributing any performance-related change please include both reports in the PR.
 
 - `HOTPATH_TUI_TAB` - set values from 1 to 6, to open a different TUI tab and execute different codepaths in the benchmark (default `1`)
 - `HOTPATH_BENCH_RELEASE` - set to `true` to run benchmarks with `--release` profile (default `false`)
