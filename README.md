@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/2e890417-2b43-4b1b-8657-a5ef3b458153
 ## Features
 
 - **Zero-cost when disabled** - fully gated by a feature flag.
-- **Low-overhead** profiling for both sync and async code.
+- **Low-overhead** time/memory profiling for both sync and async code.
 - **Live TUI dashboard** - real-time monitoring of performance data flow metrics in TUI dashboard (built with [ratatui.rs](https://ratatui.rs/)).
 - **Static reports for one-off programs** - alternatively print profiling summaries without running the TUI.
 - **Memory allocation tracking** - track bytes allocated and allocation counts per function.

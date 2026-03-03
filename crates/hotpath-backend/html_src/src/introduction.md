@@ -61,7 +61,7 @@ or use the live TUI dashboard to monitor real-time performance and data flow met
 ## Features
 
 - **Zero-cost when disabled** - fully gated by a feature flag.
-- **Low-overhead** profiling for both sync and async code.
+- **Low-overhead** time/memory profiling for both sync and async code.
 - **Live TUI dashboard** - live TUI dashboard for performance + async data-flow metrics. (built with <a href="https://ratatui.rs/" target="_blank">ratatui.rs</a>).
 - **Static reports for one-off programs** - alternatively print profiling summaries without running the TUI.
 - **Memory allocation tracking** - track bytes allocated and allocation counts per function.
