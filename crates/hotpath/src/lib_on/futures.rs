@@ -399,11 +399,7 @@ fn process_future_event(state: &mut FuturesInternalState, event: FutureEvent) {
 
 /// Send a future event to the background thread.
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
-pub(crate) fn send_future_event(visible: bool, event: FutureEvent) {
-    if !visible {
-        return;
-    };
-
+pub(crate) fn send_future_event(event: FutureEvent) {
     if let Some(state) = FUTURES_STATE.get() {
         let _ = state.event_tx.send(event);
     }

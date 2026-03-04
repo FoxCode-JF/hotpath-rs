@@ -55,8 +55,8 @@ pin_project! {
 
     impl<F: Future> PinnedDrop for InstrumentedFuture<F> {
         fn drop(this: Pin<&mut Self>) {
-            if !this.completed {
-                send_future_event(this.visible, FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
+            if this.visible && !this.completed {
+                send_future_event(FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
             }
         }
     }
@@ -78,17 +78,14 @@ impl<F: Future> InstrumentedFuture<F> {
             let call_id = FUTURE_CALL_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
 
             if is_new {
-                send_future_event(
-                    true,
-                    FutureEvent::Created {
-                        future_id,
-                        source: location,
-                        display_label: label,
-                    },
-                );
+                send_future_event(FutureEvent::Created {
+                    future_id,
+                    source: location,
+                    display_label: label,
+                });
             }
 
-            send_future_event(true, FutureEvent::CallCreated { future_id, call_id });
+            send_future_event(FutureEvent::CallCreated { future_id, call_id });
             (future_id, call_id)
         } else {
             (0, 0)
@@ -156,27 +153,21 @@ impl<F: Future> Future for InstrumentedFuture<F> {
 
         {
             let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            send_future_event(
-                true,
-                FutureEvent::Polled {
-                    future_id,
-                    call_id,
-                    result: poll_result,
-                    poll_duration_ns,
-                    poll_alloc_bytes,
-                    poll_alloc_count,
-                },
-            );
+            send_future_event(FutureEvent::Polled {
+                future_id,
+                call_id,
+                result: poll_result,
+                poll_duration_ns,
+                poll_alloc_bytes,
+                poll_alloc_count,
+            });
 
             if *this.completed {
-                send_future_event(
-                    true,
-                    FutureEvent::Completed {
-                        future_id,
-                        call_id,
-                        log_message: None,
-                    },
-                );
+                send_future_event(FutureEvent::Completed {
+                    future_id,
+                    call_id,
+                    log_message: None,
+                });
             }
         }
 
@@ -206,7 +197,7 @@ pin_project! {
     impl<F: Future> PinnedDrop for InstrumentedFutureLog<F> {
         fn drop(this: Pin<&mut Self>) {
             if this.visible && !this.completed {
-                send_future_event(true, FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
+                send_future_event(FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
             }
         }
     }
@@ -229,17 +220,14 @@ impl<F: Future> InstrumentedFutureLog<F> {
             let call_id = FUTURE_CALL_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
 
             if is_new {
-                send_future_event(
-                    true,
-                    FutureEvent::Created {
-                        future_id,
-                        source: location,
-                        display_label: label,
-                    },
-                );
+                send_future_event(FutureEvent::Created {
+                    future_id,
+                    source: location,
+                    display_label: label,
+                });
             }
 
-            send_future_event(true, FutureEvent::CallCreated { future_id, call_id });
+            send_future_event(FutureEvent::CallCreated { future_id, call_id });
             (future_id, call_id)
         } else {
             (0, 0)
@@ -309,27 +297,21 @@ where
 
         {
             let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            send_future_event(
-                true,
-                FutureEvent::Polled {
-                    future_id,
-                    call_id,
-                    result: poll_result,
-                    poll_duration_ns,
-                    poll_alloc_bytes,
-                    poll_alloc_count,
-                },
-            );
+            send_future_event(FutureEvent::Polled {
+                future_id,
+                call_id,
+                result: poll_result,
+                poll_duration_ns,
+                poll_alloc_bytes,
+                poll_alloc_count,
+            });
 
             if *this.completed {
-                send_future_event(
-                    true,
-                    FutureEvent::Completed {
-                        future_id,
-                        call_id,
-                        log_message,
-                    },
-                );
+                send_future_event(FutureEvent::Completed {
+                    future_id,
+                    call_id,
+                    log_message,
+                });
             }
         }
 
