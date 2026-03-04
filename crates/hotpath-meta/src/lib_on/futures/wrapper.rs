@@ -8,51 +8,12 @@ use super::{
 use crate::functions::AsyncAllocBridge;
 use pin_project_lite::pin_project;
 use std::future::Future;
-use std::mem::ManuallyDrop;
 use std::pin::Pin;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+use std::task::{Context, Poll};
 
 use crate::instant::Instant;
-
-struct WakerData {
-    inner: Waker,
-}
-
-fn waker_clone(data: *const ()) -> RawWaker {
-    let arc = ManuallyDrop::new(unsafe { Arc::from_raw(data as *const WakerData) });
-    let cloned = Arc::clone(&arc);
-    RawWaker::new(Arc::into_raw(cloned) as *const (), &VTABLE)
-}
-
-fn waker_wake(data: *const ()) {
-    unsafe { Arc::increment_strong_count(data as *const WakerData) };
-    let arc = unsafe { Arc::from_raw(data as *const WakerData) };
-    arc.inner.wake_by_ref();
-}
-
-fn waker_wake_by_ref(data: *const ()) {
-    let arc = ManuallyDrop::new(unsafe { Arc::from_raw(data as *const WakerData) });
-    arc.inner.wake_by_ref();
-}
-
-fn waker_drop(data: *const ()) {
-    unsafe {
-        Arc::from_raw(data as *const WakerData);
-    }
-}
-
-static VTABLE: RawWakerVTable =
-    RawWakerVTable::new(waker_clone, waker_wake, waker_wake_by_ref, waker_drop);
-
-fn create_instrumented_waker(waker: &Waker) -> Waker {
-    let data = Arc::new(WakerData {
-        inner: waker.clone(),
-    });
-    let raw = RawWaker::new(Arc::into_raw(data) as *const (), &VTABLE);
-    unsafe { Waker::from_raw(raw) }
-}
 
 #[cfg(feature = "hotpath-alloc-meta")]
 #[inline]
@@ -172,15 +133,9 @@ impl<F: Future> Future for InstrumentedFuture<F> {
         let future_id = *this.future_id;
         let call_id = *this.call_id;
 
-        let instrumented_waker = {
-            let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            create_instrumented_waker(cx.waker())
-        };
-        let mut instrumented_cx = Context::from_waker(&instrumented_waker);
-
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
-            measure_poll_alloc(|| this.inner.poll(&mut instrumented_cx));
+            measure_poll_alloc(|| this.inner.poll(cx));
         let poll_duration_ns = start.elapsed().as_nanos() as u64;
         if let (Some(bytes), Some(count), Some(bridge)) = (
             poll_alloc_bytes,
@@ -330,15 +285,9 @@ where
         let future_id = *this.future_id;
         let call_id = *this.call_id;
 
-        let instrumented_waker = {
-            let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            create_instrumented_waker(cx.waker())
-        };
-        let mut instrumented_cx = Context::from_waker(&instrumented_waker);
-
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
-            measure_poll_alloc(|| this.inner.poll(&mut instrumented_cx));
+            measure_poll_alloc(|| this.inner.poll(cx));
         let poll_duration_ns = start.elapsed().as_nanos() as u64;
         if let (Some(bytes), Some(count), Some(bridge)) = (
             poll_alloc_bytes,
