@@ -167,10 +167,11 @@ Use to track stream throughput and identify stalled streams."#)]
 Returns JSON array with:
 - id: future identifier
 - label: optional custom label
-- poll_count: number of times polled (high counts may indicate inefficient futures)
-- state: "active", "completed", or "cancelled"
+- call_count: number of future invocations observed
+- total_polls: cumulative number of poll calls across invocations
+- total_poll_duration_ns: cumulative poll time in nanoseconds
 
-High poll counts with "active" state suggest futures that wake frequently without progress."#)]
+High poll counts can indicate futures that wake frequently without making progress."#)]
     async fn futures(&self) -> Result<CallToolResult, McpError> {
         log_debug("Tool called: futures");
 

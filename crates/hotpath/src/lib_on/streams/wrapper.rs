@@ -10,10 +10,15 @@ use std::task::{Context, Poll};
 use crate::instant::Instant;
 
 pin_project! {
-    /// Wrapper around a `Stream` that instruments it with statistics collection.
+    /// A wrapper around a `Stream` that tracks item-yield events.
     ///
-    /// This struct implements the `Stream` trait and forwards all calls to the inner stream
-    /// while recording statistics about yielded items.
+    /// Created via the `stream!` macro, this wrapper tracks:
+    /// - Creation (stream type and item size)
+    /// - Each item yield with timestamp
+    /// - Stream completion
+    ///
+    /// This variant does NOT require `Debug` on the item type.
+    /// Use `InstrumentedStreamLog` (via `stream!(expr, log = true)`) to log each yielded item.
     pub struct InstrumentedStream<S> {
         #[pin]
         inner: S,
@@ -72,9 +77,14 @@ impl<S: Stream> Stream for InstrumentedStream<S> {
 }
 
 pin_project! {
-    /// Wrapper around a `Stream` that instruments it with message logging enabled.
+    /// A wrapper around a `Stream` that tracks item-yield events including the item value.
     ///
-    /// This variant captures the Debug representation of yielded items.
+    /// Created via the `stream!(expr, log = true)` macro, this wrapper tracks:
+    /// - Creation (stream type and item size)
+    /// - Each item yield with timestamp and `Debug` representation
+    /// - Stream completion
+    ///
+    /// This variant requires `Debug` on the item type to log each yielded value.
     pub struct InstrumentedStreamLog<S> {
         #[pin]
         inner: S,

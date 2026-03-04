@@ -1,7 +1,7 @@
 //! JSON serializable types for TUI and CLI consumers.
 //!
 //! This module contains all JSON types used by the HTTP server and TUI console.
-//! It is gated behind `hotpath`, `tui`, or `ci` features.
+//! It is gated behind `hotpath`, `utils`, or `tui` features.
 
 mod formatted;
 pub use formatted::*;

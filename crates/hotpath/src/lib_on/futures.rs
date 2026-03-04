@@ -487,10 +487,8 @@ pub(crate) fn get_future_logs_list(future_id: u32) -> Option<FutureLogsList> {
 
 /// Instrument a future to inspect future's lifecycle events.
 ///
-/// # Variants
-///
-/// - `future!(expr)` - No Debug requirement, prints `Ready` without the value
-/// - `future!(expr, log = true)` - Requires Debug, prints `Ready(value)`
+/// Optional parameters: `label`, `log = true`.
+/// `log = true` requires `Debug` on the output type and prints `Ready(value)`.
 ///
 /// # Examples
 ///

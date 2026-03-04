@@ -509,6 +509,10 @@ cfg_if::cfg_if! {
 
 /// Instrument a channel creation to wrap it with debugging proxies.
 ///
+/// Optional parameters: `label`, `log = true`, `capacity` (in any order).
+/// `capacity` is required for `futures_channel::mpsc` bounded channels.
+/// `log = true` requires `Debug` on the message type.
+///
 /// # Examples
 ///
 /// ```rust,no_run

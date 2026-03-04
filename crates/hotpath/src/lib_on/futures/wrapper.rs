@@ -38,7 +38,8 @@ pin_project! {
     ///
     /// Created via the `future!` macro, this wrapper tracks:
     /// - Creation
-    /// - Each poll call with result (Pending/Ready) and thread ID
+    /// - Each poll call with result (Pending/Ready) and duration
+    /// - Memory allocations per poll (when `hotpath-alloc` feature is enabled)
     /// - Drop (cancellation if not completed)
     ///
     /// This variant does NOT require `Debug` on the output type.
@@ -180,7 +181,8 @@ pin_project! {
     ///
     /// Created via the `future!(expr, log = true)` macro, this wrapper tracks:
     /// - Creation
-    /// - Each poll call with result (Pending/Ready with Debug output) and thread ID
+    /// - Each poll call with result (Pending/Ready with Debug output) and duration
+    /// - Memory allocations per poll (when `hotpath-alloc` feature is enabled)
     /// - Drop (cancellation if not completed)
     ///
     /// This variant requires `Debug` on the output type to log the value.

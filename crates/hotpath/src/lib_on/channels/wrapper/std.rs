@@ -54,7 +54,7 @@ where
 }
 
 /// Wrap a bounded std channel with proxy ends. Returns (outer_tx, outer_rx).
-/// All messages pass through the two forwarders running in separate threads.
+/// All messages pass through a single forwarder thread.
 pub(crate) fn wrap_sync_channel<T: Send + 'static>(
     inner: (SyncSender<T>, Receiver<T>),
     source: &'static str,

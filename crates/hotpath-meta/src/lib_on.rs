@@ -117,7 +117,8 @@ macro_rules! measure_block {
 ///
 /// Works like `std::dbg!` but sends debug logs to a background worker thread
 /// for tracking in the profiler. The logs can be viewed in the TUI or via
-/// the HTTP API at `/debug` and `/debug/{id}/logs`.
+/// the HTTP API at `/debug`, `/debug/dbg/{id}/logs`, `/debug/val/{id}/logs`,
+/// and `/debug/gauge/{id}/logs`.
 ///
 /// # Variants
 ///
@@ -189,7 +190,7 @@ macro_rules! val {
 ///
 /// Returns a `GaugeHandle` that can be used to set, increment, or decrement
 /// a numeric value. Gauges track the current value, min/max values, and
-/// update history. Gauges are displayed in the Data Flow tab of the TUI.
+/// update history. Gauges are displayed in the Debug tab of the TUI.
 ///
 /// # Examples
 ///
@@ -214,6 +215,12 @@ macro_rules! gauge {
     }};
 }
 
+/// Initialize Tokio runtime metrics monitoring.
+///
+/// # Variants
+///
+/// - `tokio_runtime!()` — uses `tokio::runtime::Handle::current()`
+/// - `tokio_runtime!($handle)` — uses the provided `&Handle`
 #[macro_export]
 macro_rules! tokio_runtime {
     () => {

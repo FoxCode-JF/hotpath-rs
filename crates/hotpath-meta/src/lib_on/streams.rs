@@ -297,26 +297,21 @@ where
 
 /// Instrument a stream to track its item yields.
 ///
+/// Optional parameters: `label`, `log = true`.
+/// `log = true` requires `Debug` on the item type.
+///
 /// # Examples
 ///
 /// ```rust,ignore
 /// use futures::stream::{self, StreamExt};
-/// use streams_console::stream;
+/// use hotpath_meta::stream;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     // Create a stream
-///     let s = stream::iter(1..=10);
-///
-///     // Instrument it
-///     let s = stream!(s);
-///
-///     // Use it normally
+///     let s = stream!(stream::iter(1..=10));
 ///     let _items: Vec<_> = s.collect().await;
 /// }
 /// ```
-///
-/// See the `stream!` macro documentation for full usage details.
 #[macro_export]
 macro_rules! stream {
     ($expr:expr) => {{

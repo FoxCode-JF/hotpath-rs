@@ -63,7 +63,7 @@ where
 }
 
 /// Wrap the inner channel with proxy ends. Returns (outer_tx, outer_rx).
-/// All messages pass through the two forwarders.
+/// All messages pass through a single forwarder task.
 pub(crate) fn wrap_channel<T: Send + 'static>(
     inner: (Sender<T>, Receiver<T>),
     source: &'static str,

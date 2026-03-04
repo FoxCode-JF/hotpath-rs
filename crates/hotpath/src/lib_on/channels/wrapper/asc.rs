@@ -62,7 +62,7 @@ where
 }
 
 /// Wrap the inner async channel with proxy ends. Returns (outer_tx, outer_rx).
-/// All messages pass through the two forwarders.
+/// All messages pass through a single forwarder task.
 pub(crate) fn wrap_bounded<T: Send + 'static>(
     inner: (Sender<T>, Receiver<T>),
     source: &'static str,

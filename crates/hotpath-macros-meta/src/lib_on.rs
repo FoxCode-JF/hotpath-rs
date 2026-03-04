@@ -8,6 +8,7 @@ pub(crate) enum Format {
     Table,
     Json,
     JsonPretty,
+    None,
 }
 
 impl Format {
@@ -16,6 +17,7 @@ impl Format {
             Format::Table => quote!(hotpath_meta::Format::Table),
             Format::Json => quote!(hotpath_meta::Format::Json),
             Format::JsonPretty => quote!(hotpath_meta::Format::JsonPretty),
+            Format::None => quote!(hotpath_meta::Format::None),
         }
     }
 }
@@ -154,8 +156,9 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
                         "table" => Format::Table,
                         "json" => Format::Json,
                         "json-pretty" => Format::JsonPretty,
+                        "none" => Format::None,
                         other => return Err(meta.error(format!(
-                            "Unknown format {:?}. Expected one of: \"table\", \"json\", \"json-pretty\"",
+                            "Unknown format {:?}. Expected one of: \"table\", \"json\", \"json-pretty\", \"none\"",
                             other
                         ))),
                     };
@@ -302,6 +305,7 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # Parameters
 ///
 /// * `log` - If `true`, logs the result value when the function returns (requires `Debug` on return type)
+/// * `future` - If `true`, also tracks async future lifecycle. Only valid on async functions.
 ///
 /// # Examples
 ///
