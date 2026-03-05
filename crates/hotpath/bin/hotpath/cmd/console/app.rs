@@ -181,7 +181,7 @@ pub(crate) struct App {
 
     pub(crate) program_uptime: Option<String>,
     pub(crate) auto_expand_logs: bool,
-    pub(crate) auto_select_first: bool,
+    pub(crate) auto_select_index: Option<usize>,
 
     pub(crate) pending_g: Option<Instant>,
 }
@@ -217,7 +217,17 @@ impl App {
             .ok()
             .and_then(|val| SelectedTab::from_env_str(&val))
             .unwrap_or_default();
-        let auto_expand_logs = Self::env_flag("HOTPATH_TUI_AUTO_EXPAND_LOGS");
+        let auto_select_index: Option<usize> = std::env::var("HOTPATH_TUI_AUTO_EXPAND_LOGS")
+            .ok()
+            .map(|val| {
+                val.trim().parse::<usize>().unwrap_or_else(|_| {
+                    panic!(
+                        "HOTPATH_TUI_AUTO_EXPAND_LOGS must be an integer, got: {:?}",
+                        val
+                    )
+                })
+            });
+        let auto_expand_logs = auto_select_index.is_some();
 
         let empty_functions = JsonFunctionsList {
             profiling_mode: hotpath::ProfilingMode::Timing,
@@ -295,7 +305,7 @@ impl App {
 
             program_uptime: None,
             auto_expand_logs,
-            auto_select_first: auto_expand_logs,
+            auto_select_index,
             pending_g: None,
         }
     }

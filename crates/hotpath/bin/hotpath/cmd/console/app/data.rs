@@ -49,9 +49,10 @@ impl App {
 
         let entries = &self.timing_functions.data;
 
-        if self.auto_select_first {
+        if let Some(idx) = self.auto_select_index {
+            let clamped = idx.min(entries.len().saturating_sub(1));
             if !entries.is_empty() {
-                self.timing_table_state.select(Some(0));
+                self.timing_table_state.select(Some(clamped));
                 self.update_and_request_function_logs();
             }
         } else if let Some(function_id) = selected_function_id {
@@ -80,9 +81,10 @@ impl App {
 
         let entries = &self.memory_functions.data;
 
-        if self.auto_select_first {
+        if let Some(idx) = self.auto_select_index {
+            let clamped = idx.min(entries.len().saturating_sub(1));
             if !entries.is_empty() {
-                self.memory_table_state.select(Some(0));
+                self.memory_table_state.select(Some(clamped));
                 self.update_and_request_function_logs();
             }
         } else if let Some(function_id) = selected_function_id {
@@ -192,9 +194,10 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if self.auto_select_first {
+        if let Some(idx) = self.auto_select_index {
             if !self.data_flow.entries.is_empty() {
-                self.data_flow_table_state.select(Some(0));
+                let clamped = idx.min(self.data_flow.entries.len() - 1);
+                self.data_flow_table_state.select(Some(clamped));
             }
         } else if let Some(id) = selected_id {
             if let Some(new_idx) = self.data_flow.entries.iter().position(|e| e.id == id) {
@@ -277,9 +280,10 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if self.auto_select_first {
+        if let Some(idx) = self.auto_select_index {
             if !self.threads.data.is_empty() {
-                self.threads_table_state.select(Some(0));
+                let clamped = idx.min(self.threads.data.len() - 1);
+                self.threads_table_state.select(Some(clamped));
             }
         } else if let Some(thread_tid) = selected_thread_tid {
             if let Some(new_idx) = self
@@ -316,9 +320,10 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if self.auto_select_first {
+        if let Some(idx) = self.auto_select_index {
             if !self.debug_stats.is_empty() {
-                self.debug_table_state.select(Some(0));
+                let clamped = idx.min(self.debug_stats.len() - 1);
+                self.debug_table_state.select(Some(clamped));
             }
         } else if let Some(id) = selected_id {
             if let Some(new_idx) = self.debug_stats.iter().position(|stat| stat.id == id) {
