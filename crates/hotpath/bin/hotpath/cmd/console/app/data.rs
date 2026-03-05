@@ -49,7 +49,12 @@ impl App {
 
         let entries = &self.timing_functions.data;
 
-        if let Some(function_id) = selected_function_id {
+        if self.auto_select_first {
+            if !entries.is_empty() {
+                self.timing_table_state.select(Some(0));
+                self.update_and_request_function_logs();
+            }
+        } else if let Some(function_id) = selected_function_id {
             if let Some(new_idx) = entries.iter().position(|f| f.id == function_id) {
                 self.timing_table_state.select(Some(new_idx));
             } else if !entries.is_empty() {
@@ -75,7 +80,12 @@ impl App {
 
         let entries = &self.memory_functions.data;
 
-        if let Some(function_id) = selected_function_id {
+        if self.auto_select_first {
+            if !entries.is_empty() {
+                self.memory_table_state.select(Some(0));
+                self.update_and_request_function_logs();
+            }
+        } else if let Some(function_id) = selected_function_id {
             if let Some(new_idx) = entries.iter().position(|f| f.id == function_id) {
                 self.memory_table_state.select(Some(new_idx));
             } else if !entries.is_empty() {
@@ -182,7 +192,11 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if let Some(id) = selected_id {
+        if self.auto_select_first {
+            if !self.data_flow.entries.is_empty() {
+                self.data_flow_table_state.select(Some(0));
+            }
+        } else if let Some(id) = selected_id {
             if let Some(new_idx) = self.data_flow.entries.iter().position(|e| e.id == id) {
                 self.data_flow_table_state.select(Some(new_idx));
             } else if !self.data_flow.entries.is_empty() {
@@ -263,7 +277,11 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if let Some(thread_tid) = selected_thread_tid {
+        if self.auto_select_first {
+            if !self.threads.data.is_empty() {
+                self.threads_table_state.select(Some(0));
+            }
+        } else if let Some(thread_tid) = selected_thread_tid {
             if let Some(new_idx) = self
                 .threads
                 .data
@@ -298,7 +316,11 @@ impl App {
         self.last_successful_fetch = Some(Instant::now());
         self.error_message = None;
 
-        if let Some(id) = selected_id {
+        if self.auto_select_first {
+            if !self.debug_stats.is_empty() {
+                self.debug_table_state.select(Some(0));
+            }
+        } else if let Some(id) = selected_id {
             if let Some(new_idx) = self.debug_stats.iter().position(|stat| stat.id == id) {
                 self.debug_table_state.select(Some(new_idx));
             } else if !self.debug_stats.is_empty() {

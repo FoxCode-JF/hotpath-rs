@@ -181,12 +181,26 @@ pub(crate) struct App {
 
     pub(crate) program_uptime: Option<String>,
     pub(crate) auto_expand_logs: bool,
+    pub(crate) auto_select_first: bool,
 
     pub(crate) pending_g: Option<Instant>,
 }
 
 #[hotpath::measure_all]
 impl App {
+    fn env_flag(name: &str) -> bool {
+        match std::env::var(name) {
+            Ok(value) => {
+                let trimmed = value.trim();
+                trimmed.eq_ignore_ascii_case("1")
+                    || trimmed.eq_ignore_ascii_case("true")
+                    || trimmed.eq_ignore_ascii_case("yes")
+                    || trimmed.eq_ignore_ascii_case("on")
+            }
+            Err(_) => false,
+        }
+    }
+
     pub(crate) fn new(metrics_host: &str, metrics_port: u16, refresh_interval_ms: u64) -> Self {
         let (request_tx, request_rx) = crossbeam_channel::unbounded();
         let (event_tx, event_rx) = hotpath::channel!(
@@ -199,13 +213,11 @@ impl App {
         super::http_worker::spawn_http_worker(request_rx, event_tx.clone(), base_url.clone());
         super::input::spawn_input_reader(event_tx);
 
-        let (initial_tab, auto_expand_logs) = match std::env::var("HOTPATH_TUI_TAB") {
-            Ok(val) => match SelectedTab::from_env_str(&val) {
-                Some(tab) => (tab, true),
-                None => (SelectedTab::default(), false),
-            },
-            Err(_) => (SelectedTab::default(), false),
-        };
+        let initial_tab = std::env::var("HOTPATH_TUI_TAB")
+            .ok()
+            .and_then(|val| SelectedTab::from_env_str(&val))
+            .unwrap_or_default();
+        let auto_expand_logs = Self::env_flag("HOTPATH_TUI_AUTO_EXPAND_LOGS");
 
         let empty_functions = JsonFunctionsList {
             profiling_mode: hotpath::ProfilingMode::Timing,
@@ -283,6 +295,7 @@ impl App {
 
             program_uptime: None,
             auto_expand_logs,
+            auto_select_first: auto_expand_logs,
             pending_g: None,
         }
     }

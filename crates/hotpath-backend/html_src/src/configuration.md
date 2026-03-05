@@ -39,7 +39,8 @@
 | Variable | Description |
 |----------|-------------|
 | `HOTPATH_TUI_REFRESH_INTERVAL_MS` | TUI dashboard refresh interval in milliseconds. (default: `500`) |
-| `HOTPATH_TUI_TAB` | Initial tab to display when launching the TUI (e.g. `functions`, `channels`, `streams`). Useful for self-benchmarks. (default: `''`) |
+| `HOTPATH_TUI_TAB` | Initial tab to display when launching the TUI: `1` (Timing), `2` (Memory), `3` (Data Flow), `4` (Threads), `5` (Debug), `6` (Tokio). (default: unset) |
+| `HOTPATH_TUI_AUTO_EXPAND_LOGS` | Set to `true` or `1` to auto-open the logs panel once initial data arrives and always keep the first item selected. Useful to trigger different codepaths in self-benchmarks.
 | `HOTPATH_METRICS_HOST` | Host URL that the TUI console connects to for metrics data. (default: `http://localhost`) |
 | `HOTPATH_METRICS_PORT` | Port that the TUI console connects to for metrics data. (default: `6770`) |
 
