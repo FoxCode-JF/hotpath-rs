@@ -26,7 +26,7 @@ fn build_app() -> Router {
         .layer(from_fn(middleware::security_headers))
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main]
 #[hotpath::main]
 async fn main() {
     tracing_subscriber::fmt::init();
