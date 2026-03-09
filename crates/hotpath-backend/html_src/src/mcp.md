@@ -31,6 +31,10 @@ These tools return aggregated performance summaries:
 | `futures` | Future execution statistics |
 | `threads` | Thread activity and timing |
 | `gauges` | Custom gauge values |
+| `dbg_entries` | All `dbg!` debug entries |
+| `val_entries` | All `val!` value tracking entries |
+| `tokio_runtime` | Tokio runtime metrics snapshot (requires `tokio` feature) |
+| `profiler_status` | Profiler uptime status |
 
 ### Detailed log tools
 
@@ -44,6 +48,8 @@ These tools accept parameters to retrieve detailed execution logs:
 | `stream_logs` | `stream_name`, `limit` | Stream operation logs |
 | `future_logs` | `future_name`, `limit` | Future execution logs |
 | `gauge_logs` | `gauge_name`, `limit` | Gauge value history |
+| `dbg_logs` | `debug_id` | Detailed logs for a `dbg!` entry |
+| `val_logs` | `debug_id` | Detailed logs for a `val!` entry |
 
 ## Configuration
 
