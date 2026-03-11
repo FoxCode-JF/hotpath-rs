@@ -5,6 +5,8 @@ use std::fmt::Debug;
 use crate::instant::Instant;
 
 use crate::channels::{extract_filename, START_TIME};
+#[cfg(feature = "hotpath-mcp-meta")]
+use crate::debug::get_sorted_debug_val_entries;
 use crate::debug::{
     get_or_create_val_id, init_debug_state, send_debug_event, DebugEvent, ValEntry,
 };
@@ -45,6 +47,14 @@ impl ValHandle {
             tid,
         });
     }
+}
+
+#[cfg(feature = "hotpath-mcp-meta")]
+pub(crate) fn get_debug_val_entries_json() -> Vec<JsonDebugEntry> {
+    get_sorted_debug_val_entries()
+        .iter()
+        .map(JsonDebugEntry::from)
+        .collect()
 }
 
 pub(crate) fn get_val_logs(id: u32) -> Option<JsonDebugValLogs> {

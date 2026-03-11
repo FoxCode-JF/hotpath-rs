@@ -15,7 +15,9 @@ use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use crate::channels::{get_channel_logs, get_sorted_channel_entries, START_TIME};
+use crate::debug::dbg::{get_dbg_logs, get_debug_dbg_entries_json};
 use crate::debug::gauge::{get_debug_gauge_entries_json, get_debug_gauge_logs};
+use crate::debug::val::{get_debug_val_entries_json, get_val_logs};
 use crate::functions::{
     get_function_logs_alloc, get_function_logs_timing, get_functions_alloc_json,
     get_functions_timing_json,
@@ -24,8 +26,9 @@ use crate::futures::{get_future_logs_list, get_sorted_future_stats};
 use crate::json::{
     JsonChannelEntry, JsonChannelLogsList, JsonChannelsList, JsonFunctionAllocLogsList,
     JsonFunctionTimingLogsList, JsonFutureEntry, JsonFutureLogsList, JsonFuturesList,
-    JsonStreamEntry, JsonStreamLogsList, JsonStreamsList,
+    JsonProfilerStatus, JsonStreamEntry, JsonStreamLogsList, JsonStreamsList,
 };
+use crate::output::format_duration;
 use crate::streams::{get_sorted_stream_stats, get_stream_logs};
 use crate::threads::get_threads_json;
 
@@ -57,6 +60,12 @@ struct FutureIdParam {
 struct GaugeIdParam {
     #[schemars(description = "Gauge identifier from the gauges list")]
     gauge_id: String,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct DebugIdParam {
+    #[schemars(description = "Debug entry ID from the debug tool response")]
+    debug_id: u32,
 }
 
 static MCP_SERVER_PORT: LazyLock<u16> = LazyLock::new(|| {
@@ -370,6 +379,109 @@ Returns JSON array of recent value updates with timestamps. Use gauges first to 
                 "Gauge not found",
             )])),
         }
+    }
+
+    #[tool(description = r#"Get all dbg! debug entries.
+
+Returns JSON array of debug entries with IDs, source locations, expressions, and current values. Use the returned IDs with dbg_logs to get detailed history."#)]
+    async fn dbg_entries(&self) -> Result<CallToolResult, McpError> {
+        log_debug("Tool called: dbg_entries");
+
+        let entries = get_debug_dbg_entries_json();
+        Ok(CallToolResult::success(vec![Content::text(to_json(
+            &entries,
+        )?)]))
+    }
+
+    #[tool(description = r#"Get all val! value tracking entries.
+
+Returns JSON array of value entries with IDs, keys, source locations, and current values. Use the returned IDs with val_logs to get detailed history."#)]
+    async fn val_entries(&self) -> Result<CallToolResult, McpError> {
+        log_debug("Tool called: val_entries");
+
+        let entries = get_debug_val_entries_json();
+        Ok(CallToolResult::success(vec![Content::text(to_json(
+            &entries,
+        )?)]))
+    }
+
+    #[tool(description = r#"Get detailed logs for a specific dbg! debug entry.
+
+Returns JSON array of recent debug values with timestamps. Use dbg_entries first to get entry IDs, then use this tool to get detailed logs."#)]
+    async fn dbg_logs(&self, params: Parameters<DebugIdParam>) -> Result<CallToolResult, McpError> {
+        let debug_id = params.0.debug_id;
+        log_debug(&format!("Tool called: dbg_logs({})", debug_id));
+
+        match get_dbg_logs(debug_id) {
+            Some(logs) => Ok(CallToolResult::success(vec![Content::text(to_json(
+                &logs,
+            )?)])),
+            None => Ok(CallToolResult::error(vec![Content::text(
+                "Debug entry not found",
+            )])),
+        }
+    }
+
+    #[tool(description = r#"Get detailed logs for a specific val! debug entry.
+
+Returns JSON array of recent value updates with timestamps. Use val_entries first to get entry IDs, then use this tool to get detailed logs."#)]
+    async fn val_logs(&self, params: Parameters<DebugIdParam>) -> Result<CallToolResult, McpError> {
+        let debug_id = params.0.debug_id;
+        log_debug(&format!("Tool called: val_logs({})", debug_id));
+
+        match get_val_logs(debug_id) {
+            Some(logs) => Ok(CallToolResult::success(vec![Content::text(to_json(
+                &logs,
+            )?)])),
+            None => Ok(CallToolResult::error(vec![Content::text(
+                "Value entry not found",
+            )])),
+        }
+    }
+
+    #[tool(
+        description = r#"Get Tokio runtime metrics snapshot (requires tokio feature).
+
+Returns JSON with per-worker stats (park count, busy duration, poll count, steal count) and global stats (alive tasks, queue depths, blocking threads, IO driver metrics). Requires calling hotpath_meta::tokio_runtime!() in the profiled application."#
+    )]
+    async fn tokio_runtime(&self) -> Result<CallToolResult, McpError> {
+        log_debug("Tool called: tokio_runtime");
+
+        #[cfg(feature = "tokio")]
+        match crate::tokio_runtime::get_runtime_json() {
+            Some(snapshot) => {
+                return Ok(CallToolResult::success(vec![Content::text(to_json(
+                    &snapshot,
+                )?)]));
+            }
+            None => {
+                return Ok(CallToolResult::error(vec![Content::text(
+                    "Tokio runtime metrics not available - use hotpath_meta::tokio_runtime!() to start collection",
+                )]));
+            }
+        }
+
+        #[cfg(not(feature = "tokio"))]
+        Ok(CallToolResult::error(vec![Content::text(
+            "Tokio runtime metrics not available - enable tokio feature",
+        )]))
+    }
+
+    #[tool(description = r#"Get profiler status including uptime.
+
+Returns JSON with:
+- uptime: human-readable duration since profiler started (e.g. "1m 23s", "2h 5m 30s")
+
+Use to check if the profiler is running and how long it has been active."#)]
+    async fn profiler_status(&self) -> Result<CallToolResult, McpError> {
+        log_debug("Tool called: profiler_status");
+
+        let status = JsonProfilerStatus {
+            uptime: format_duration(get_current_elapsed_ns()),
+        };
+        Ok(CallToolResult::success(vec![Content::text(to_json(
+            &status,
+        )?)]))
     }
 }
 

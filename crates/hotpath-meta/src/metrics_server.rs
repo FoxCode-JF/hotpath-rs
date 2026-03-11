@@ -44,6 +44,11 @@ use std::thread;
 use tiny_http::{Header, Request, Response, Server};
 
 static HTTP_SERVER_STARTED: OnceLock<()> = OnceLock::new();
+static METRICS_SERVER_ERROR: OnceLock<String> = OnceLock::new();
+
+pub(crate) fn get_metrics_server_error() -> Option<&'static str> {
+    METRICS_SERVER_ERROR.get().map(|s| s.as_str())
+}
 
 pub(crate) fn start_metrics_server_once(port: u16) {
     if *METRICS_SERVER_DISABLED {
@@ -66,10 +71,12 @@ fn start_metrics_server(port: u16) {
             let server = match Server::http(&addr) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!(
+                    let msg = format!(
                         "{} busy ({}), skipping metrics server start. Use HOTPATH_META_METRICS_PORT to change the port.",
                         addr, e
                     );
+                    eprintln!("[hotpath-meta - error] {}", msg);
+                    let _ = METRICS_SERVER_ERROR.set(msg);
                     return;
                 }
             };

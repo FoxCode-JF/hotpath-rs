@@ -63,6 +63,14 @@ pub(crate) fn get_debug_entries_json() -> JsonDebugList {
     }
 }
 
+#[cfg(feature = "hotpath-mcp-meta")]
+pub(crate) fn get_debug_dbg_entries_json() -> Vec<JsonDebugEntry> {
+    get_sorted_debug_dbg_entries()
+        .iter()
+        .map(JsonDebugEntry::from)
+        .collect()
+}
+
 pub(crate) fn get_dbg_logs(id: u32) -> Option<JsonDebugDbgLogs> {
     let current_elapsed_ns = START_TIME
         .get()

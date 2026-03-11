@@ -164,15 +164,13 @@ pub(crate) fn build_functions_list_alloc(
         }
     };
 
-    let total_elapsed_ns = config.total_elapsed.as_nanos() as u64;
-
     JsonFunctionsList {
         profiling_mode,
         time_elapsed: format_duration(current_elapsed_ns),
         total_elapsed_ns: current_elapsed_ns,
         total_allocated: match profiling_mode {
-            ProfilingMode::AllocBytes => Some(format_bytes(total_elapsed_ns)),
-            ProfilingMode::AllocCount => Some(format_count(total_elapsed_ns)),
+            ProfilingMode::AllocBytes => Some(format_bytes(grand_total)),
+            ProfilingMode::AllocCount => Some(format_count(grand_total)),
             ProfilingMode::Timing => None,
         },
         description,
