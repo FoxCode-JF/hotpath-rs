@@ -737,6 +737,9 @@ impl Drop for HotpathGuard {
                     baseline_ns,
                     label.as_deref(),
                 );
+                if let Some(err) = crate::metrics_server::get_metrics_server_error() {
+                    let _ = writeln!(writer, "[hotpath - error] {}", err);
+                }
             }
 
             for section in &self.sections {
