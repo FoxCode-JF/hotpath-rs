@@ -3,9 +3,10 @@
 use crate::output::format_debug_truncated;
 
 use super::{
-    get_or_create_future_id, send_future_event, FutureEvent, PollResult, FUTURE_CALL_ID_COUNTER,
+    get_futures_event_tx, get_or_create_future_id, FutureEvent, PollResult, FUTURE_CALL_ID_COUNTER,
 };
 use crate::functions::AsyncAllocBridge;
+use crossbeam_channel::Sender as CbSender;
 use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -47,6 +48,7 @@ pin_project! {
     pub struct InstrumentedFuture<F: Future> {
         #[pin]
         inner: F,
+        stats_tx: Option<&'static CbSender<FutureEvent>>,
         future_id: u32,
         call_id: u32,
         completed: bool,
@@ -56,8 +58,11 @@ pin_project! {
 
     impl<F: Future> PinnedDrop for InstrumentedFuture<F> {
         fn drop(this: Pin<&mut Self>) {
-            if this.visible && !this.completed {
-                send_future_event(FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
+            if let (true, false, Some(stats_tx)) = (this.visible, this.completed, this.stats_tx) {
+                let _ = stats_tx.send(FutureEvent::Cancelled {
+                    future_id: this.future_id,
+                    call_id: this.call_id,
+                });
             }
         }
     }
@@ -74,28 +79,30 @@ impl<F: Future> InstrumentedFuture<F> {
     ) -> Self {
         let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
-        let (future_id, call_id) = if visible {
+        let (stats_tx, future_id, call_id) = if visible {
+            let stats_tx = get_futures_event_tx();
             let (future_id, is_new) = get_or_create_future_id(location);
             let call_id = FUTURE_CALL_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
 
             if is_new {
-                send_future_event(FutureEvent::Created {
+                let _ = stats_tx.send(FutureEvent::Created {
                     future_id,
                     source: location,
                     display_label: label,
                 });
             }
 
-            send_future_event(FutureEvent::CallCreated { future_id, call_id });
-            (future_id, call_id)
+            let _ = stats_tx.send(FutureEvent::CallCreated { future_id, call_id });
+            (Some(stats_tx), future_id, call_id)
         } else {
-            (0, 0)
+            (None, 0, 0)
         };
 
         drop(_suspend);
 
         Self {
             inner,
+            stats_tx,
             future_id,
             call_id,
             completed: false,
@@ -131,6 +138,9 @@ impl<F: Future> Future for InstrumentedFuture<F> {
 
         let future_id = *this.future_id;
         let call_id = *this.call_id;
+        let stats_tx = this
+            .stats_tx
+            .expect("visible instrumented futures always cache a sender");
 
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
@@ -154,7 +164,7 @@ impl<F: Future> Future for InstrumentedFuture<F> {
 
         {
             let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            send_future_event(FutureEvent::Polled {
+            let _ = stats_tx.send(FutureEvent::Polled {
                 future_id,
                 call_id,
                 result: poll_result,
@@ -164,7 +174,7 @@ impl<F: Future> Future for InstrumentedFuture<F> {
             });
 
             if *this.completed {
-                send_future_event(FutureEvent::Completed {
+                let _ = stats_tx.send(FutureEvent::Completed {
                     future_id,
                     call_id,
                     log_message: None,
@@ -189,6 +199,7 @@ pin_project! {
     pub struct InstrumentedFutureLog<F: Future> {
         #[pin]
         inner: F,
+        stats_tx: Option<&'static CbSender<FutureEvent>>,
         future_id: u32,
         call_id: u32,
         completed: bool,
@@ -198,8 +209,11 @@ pin_project! {
 
     impl<F: Future> PinnedDrop for InstrumentedFutureLog<F> {
         fn drop(this: Pin<&mut Self>) {
-            if this.visible && !this.completed {
-                send_future_event(FutureEvent::Cancelled { future_id: this.future_id, call_id: this.call_id });
+            if let (true, false, Some(stats_tx)) = (this.visible, this.completed, this.stats_tx) {
+                let _ = stats_tx.send(FutureEvent::Cancelled {
+                    future_id: this.future_id,
+                    call_id: this.call_id,
+                });
             }
         }
     }
@@ -217,28 +231,30 @@ impl<F: Future> InstrumentedFutureLog<F> {
     ) -> Self {
         let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
-        let (future_id, call_id) = if visible {
+        let (stats_tx, future_id, call_id) = if visible {
+            let stats_tx = get_futures_event_tx();
             let (future_id, is_new) = get_or_create_future_id(location);
             let call_id = FUTURE_CALL_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
 
             if is_new {
-                send_future_event(FutureEvent::Created {
+                let _ = stats_tx.send(FutureEvent::Created {
                     future_id,
                     source: location,
                     display_label: label,
                 });
             }
 
-            send_future_event(FutureEvent::CallCreated { future_id, call_id });
-            (future_id, call_id)
+            let _ = stats_tx.send(FutureEvent::CallCreated { future_id, call_id });
+            (Some(stats_tx), future_id, call_id)
         } else {
-            (0, 0)
+            (None, 0, 0)
         };
 
         drop(_suspend);
 
         Self {
             inner,
+            stats_tx,
             future_id,
             call_id,
             completed: false,
@@ -276,6 +292,9 @@ where
 
         let future_id = *this.future_id;
         let call_id = *this.call_id;
+        let stats_tx = this
+            .stats_tx
+            .expect("visible instrumented futures always cache a sender");
 
         let start = Instant::now();
         let (result, poll_alloc_bytes, poll_alloc_count) =
@@ -299,7 +318,7 @@ where
 
         {
             let _suspend = crate::lib_on::SuspendAllocTracking::new();
-            send_future_event(FutureEvent::Polled {
+            let _ = stats_tx.send(FutureEvent::Polled {
                 future_id,
                 call_id,
                 result: poll_result,
@@ -309,7 +328,7 @@ where
             });
 
             if *this.completed {
-                send_future_event(FutureEvent::Completed {
+                let _ = stats_tx.send(FutureEvent::Completed {
                     future_id,
                     call_id,
                     log_message,

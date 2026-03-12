@@ -189,6 +189,11 @@ pub(crate) static FUTURES_STATE: OnceLock<FuturesStatsState> = OnceLock::new();
 #[doc(hidden)]
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub fn init_futures_state() {
+    let _ = get_futures_state();
+}
+
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
+fn get_futures_state() -> &'static FuturesStatsState {
     FUTURES_STATE.get_or_init(|| {
         START_TIME.get_or_init(Instant::now);
 
@@ -291,7 +296,12 @@ pub fn init_futures_state() {
             shutdown_tx: Mutex::new(Some(shutdown_tx)),
             completion_rx: Mutex::new(Some(completion_rx)),
         }
-    });
+    })
+}
+
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
+pub(crate) fn get_futures_event_tx() -> &'static CbSender<FutureEvent> {
+    &get_futures_state().event_tx
 }
 
 /// Process a future event and update stats.
@@ -394,14 +404,6 @@ fn process_future_event(state: &mut FuturesInternalState, event: FutureEvent) {
                 }
             }
         }
-    }
-}
-
-/// Send a future event to the background thread.
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
-pub(crate) fn send_future_event(event: FutureEvent) {
-    if let Some(state) = FUTURES_STATE.get() {
-        let _ = state.event_tx.send(event);
     }
 }
 
