@@ -28,6 +28,43 @@ By default, allocation reports sort and display by bytes. Set `HOTPATH_ALLOC_MET
 HOTPATH_ALLOC_METRIC=count cargo run --features='hotpath,hotpath-alloc'
 ```
 
+### `hotpath::main` vs `HotpathGuardBuilder` API
+
+`#[hotpath::main]` is the simplest way to enable profiling. It creates a [`HotpathGuard`](https://docs.rs/hotpath/latest/hotpath/struct.HotpathGuard.html) for the entry-point function, and the profiling report is generated automatically when this function returns and that guard is dropped. You can use `hotpath::main` macro on any function not only `main`.
+
+[`HotpathGuardBuilder`](https://docs.rs/hotpath/latest/hotpath/struct.HotpathGuardBuilder.html) gives you manual control over the profiling guard lifetime. The report is generated when the returned `HotpathGuard` is dropped. You can start profiling later, stop it earlier, or execute a custom logic using `before_shutdown` immediately before report generation.
+
+- `#[hotpath::main]` is best when you want profiling to cover the whole program entry point with minimal setup.
+- `HotpathGuardBuilder` is best when you want to profile only part of a program, or control exactly when the report is generated.
+- Only one `HotpathGuard` may be alive at a time. Creating a second guard, whether from `#[hotpath::main]` or `HotpathGuardBuilder`, will panic.
+
+Example:
+
+```rust
+use std::time::Duration;
+
+#[hotpath::measure]
+fn example_function() {
+    std::thread::sleep(Duration::from_millis(10));
+}
+
+fn main() {
+    let guard = hotpath::HotpathGuardBuilder::new("my_program")
+        .percentiles(&[95, 99])
+        .with_functions_limit(20)
+        .format(hotpath::Format::Table)
+        .build();
+
+    example_function();
+
+    // Dropping the guard shuts down profiling and writes the report.
+    drop(guard);
+
+    // This exits immediately, so #[hotpath::main] would not generate a report.
+    std::process::exit(1);
+}
+```
+
 ### Configuring static reports
 
 | Variable | Description |
