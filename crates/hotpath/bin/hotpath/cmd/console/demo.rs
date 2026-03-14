@@ -3,71 +3,7 @@ use std::thread;
 use std::time::Duration;
 
 pub fn init() {
-    spawn_bounded_channel();
-    spawn_unbounded_channel();
     spawn_tokio_demo();
-}
-
-fn spawn_bounded_channel() {
-    let (tx, rx) = std::sync::mpsc::sync_channel::<String>(10);
-    #[cfg(feature = "hotpath")]
-    let (tx, rx) = hotpath::channel!((tx, rx), label = "demo-bounded", capacity = 10, log = true);
-
-    thread::spawn(move || {
-        let mut counter = 0u64;
-        loop {
-            let msg = format!("Message {}", counter);
-            if tx.send(msg).is_err() {
-                break;
-            }
-            if counter.is_multiple_of(10) {
-                hotpath::dbg!(counter);
-            }
-            hotpath::val!("bounded_counter").set(&counter);
-            hotpath::gauge!("bounded_msgs_sent").set(counter);
-            counter += 1;
-            thread::sleep(Duration::from_millis(100));
-        }
-    });
-
-    thread::spawn(move || {
-        let mut received = 0u64;
-        while let Ok(_msg) = rx.recv() {
-            received += 1;
-            hotpath::gauge!("bounded_msgs_recv").set(received);
-            thread::sleep(Duration::from_millis(150));
-        }
-    });
-}
-
-fn spawn_unbounded_channel() {
-    let (tx, rx) = std::sync::mpsc::channel::<u64>();
-    #[cfg(feature = "hotpath")]
-    let (tx, rx) = hotpath::channel!((tx, rx), label = "demo-unbounded", log = true);
-
-    thread::spawn(move || {
-        let mut counter = 0u64;
-        loop {
-            if tx.send(counter).is_err() {
-                break;
-            }
-            counter += 1;
-            thread::sleep(Duration::from_millis(50));
-        }
-    });
-
-    thread::spawn(move || {
-        let backlog = hotpath::gauge!("unbounded_backlog");
-        while let Ok(value) = rx.recv() {
-            if value % 20 == 0 {
-                hotpath::dbg!(value, "received");
-            }
-            hotpath::val!("unbounded_received").set(&value);
-            backlog.inc(1);
-            thread::sleep(Duration::from_millis(80));
-            backlog.dec(1);
-        }
-    });
 }
 
 async fn sleep_ms(ms: u64) {
