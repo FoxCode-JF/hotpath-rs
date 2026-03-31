@@ -38,7 +38,25 @@ HOTPATH_ALLOC_METRIC=count cargo run --features='hotpath,hotpath-alloc'
 - `HotpathGuardBuilder` is best when you want to profile only part of a program, or control exactly when the report is generated.
 - Only one `HotpathGuard` may be alive at a time. Creating a second guard, whether from `#[hotpath::main]` or `HotpathGuardBuilder`, will panic.
 
-Example:
+**Configuring limits**
+
+`limit` sets a global cap on items shown in every report section. Per-resource limits override the global value for that section:
+
+```rust
+// Global limit applies to all sections
+#[hotpath::main(limit = 10)]
+fn main() { /* ... */ }
+
+// Per-resource limits override the global limit
+#[hotpath::main(limit = 10, functions_limit = 20, channels_limit = 5)]
+fn main() { /* ... */ }
+
+// Set limit = 0 to display all instrumented resources without truncation
+#[hotpath::main(limit = 0)]
+fn main() { /* ... */ }
+```
+
+The same applies to the builder API — `with_limit` sets all sections, then individual setters override:
 
 ```rust
 use std::time::Duration;
@@ -51,6 +69,7 @@ fn example_function() {
 fn main() {
     let guard = hotpath::HotpathGuardBuilder::new("my_program")
         .percentiles(&[95, 99])
+        .with_limit(10)
         .with_functions_limit(20)
         .format(hotpath::Format::Table)
         .build();
