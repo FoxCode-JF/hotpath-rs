@@ -70,7 +70,7 @@ impl HotpathGuardBuilder {
             caller_name,
             percentiles: vec![95],
             format: Format::Table,
-            functions_limit: 10,
+            functions_limit: 15,
             channels_limit: 0,
             streams_limit: 0,
             futures_limit: 0,
@@ -83,6 +83,18 @@ impl HotpathGuardBuilder {
 
     pub fn percentiles(mut self, percentiles: &[u8]) -> Self {
         self.percentiles = percentiles.to_vec();
+        self
+    }
+
+    /// Sets the maximum number of items shown in every report section (except debug).
+    /// Set to `0` for unlimited. Per-resource limits (e.g. `with_functions_limit`)
+    /// called after this method will override the global value for that section.
+    pub fn with_limit(mut self, limit: usize) -> Self {
+        self.functions_limit = limit;
+        self.channels_limit = limit;
+        self.streams_limit = limit;
+        self.futures_limit = limit;
+        self.threads_limit = limit;
         self
     }
 

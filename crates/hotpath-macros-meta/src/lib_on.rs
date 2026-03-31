@@ -76,10 +76,19 @@ impl Format {
 /// }
 /// ```
 ///
-/// Custom limit (show top 20 functions):
+/// Global limit (applies to all report sections):
 ///
 /// ```rust,no_run
 /// #[hotpath_meta::main(limit = 20)]
+/// fn main() {
+///     // Your code here
+/// }
+/// ```
+///
+/// Per-resource limits override the global limit:
+///
+/// ```rust,no_run
+/// #[hotpath_meta::main(limit = 10, functions_limit = 20, channels_limit = 5)]
 /// fn main() {
 ///     // Your code here
 /// }
@@ -116,7 +125,12 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Defaults
     let mut percentiles: Vec<u8> = vec![95];
     let mut format = Format::Table;
-    let mut functions_limit: usize = 15;
+    let mut global_limit: Option<usize> = None;
+    let mut functions_limit: Option<usize> = None;
+    let mut channels_limit: Option<usize> = None;
+    let mut streams_limit: Option<usize> = None;
+    let mut futures_limit: Option<usize> = None;
+    let mut threads_limit: Option<usize> = None;
     let mut output_path: Option<String> = None;
     let mut report_sections: Option<String> = None;
 
@@ -168,7 +182,42 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             if meta.path.is_ident("limit") {
                 meta.input.parse::<syn::Token![=]>()?;
                 let li: LitInt = meta.input.parse()?;
-                functions_limit = li.base10_parse()?;
+                global_limit = Some(li.base10_parse()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("functions_limit") {
+                meta.input.parse::<syn::Token![=]>()?;
+                let li: LitInt = meta.input.parse()?;
+                functions_limit = Some(li.base10_parse()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("channels_limit") {
+                meta.input.parse::<syn::Token![=]>()?;
+                let li: LitInt = meta.input.parse()?;
+                channels_limit = Some(li.base10_parse()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("streams_limit") {
+                meta.input.parse::<syn::Token![=]>()?;
+                let li: LitInt = meta.input.parse()?;
+                streams_limit = Some(li.base10_parse()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("futures_limit") {
+                meta.input.parse::<syn::Token![=]>()?;
+                let li: LitInt = meta.input.parse()?;
+                futures_limit = Some(li.base10_parse()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("threads_limit") {
+                meta.input.parse::<syn::Token![=]>()?;
+                let li: LitInt = meta.input.parse()?;
+                threads_limit = Some(li.base10_parse()?);
                 return Ok(());
             }
 
@@ -187,7 +236,7 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
 
             Err(meta.error(
-                "Unknown parameter. Supported: percentiles=[..], format=\"..\", limit=N, output_path=\"..\", report=\"..\"",
+                "Unknown parameter. Supported: percentiles=[..], format=\"..\", limit=N, functions_limit=N, channels_limit=N, streams_limit=N, futures_limit=N, threads_limit=N, output_path=\"..\", report=\"..\"",
             ))
         });
 
@@ -241,10 +290,39 @@ pub fn main_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             concat!(module_path!(), "::", stringify!(#fn_name));
     };
 
+    let global_limit_call = match global_limit {
+        Some(l) => quote! { .with_limit(#l) },
+        None => quote! {},
+    };
+    let functions_limit_call = match functions_limit {
+        Some(l) => quote! { .with_functions_limit(#l) },
+        None => quote! {},
+    };
+    let channels_limit_call = match channels_limit {
+        Some(l) => quote! { .with_channels_limit(#l) },
+        None => quote! {},
+    };
+    let streams_limit_call = match streams_limit {
+        Some(l) => quote! { .with_streams_limit(#l) },
+        None => quote! {},
+    };
+    let futures_limit_call = match futures_limit {
+        Some(l) => quote! { .with_futures_limit(#l) },
+        None => quote! {},
+    };
+    let threads_limit_call = match threads_limit {
+        Some(l) => quote! { .with_threads_limit(#l) },
+        None => quote! {},
+    };
     let builder_chain = quote! {
         hotpath_meta::HotpathGuardBuilder::new(caller_name)
             .percentiles(#percentiles_array)
-            .with_functions_limit(#functions_limit)
+            #global_limit_call
+            #functions_limit_call
+            #channels_limit_call
+            #streams_limit_call
+            #futures_limit_call
+            #threads_limit_call
             .format(#format_token)
             #output_path_call
             #sections_call

@@ -268,6 +268,10 @@ impl HotpathGuardBuilder {
         self
     }
 
+    pub fn with_limit(self, _limit: usize) -> Self {
+        self
+    }
+
     pub fn output_path(self, _path: impl AsRef<std::path::Path>) -> Self {
         self
     }
