@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::json::JsonFunctionEntry;
 use crate::json::JsonFunctionsList;
-use crate::lib_on::functions::StatsConfig;
+use crate::lib_on::functions::FunctionStatsConfig;
 use crate::output::{
     format_bytes, format_count, format_duration, format_percentile_key, ProfilingMode,
 };
@@ -11,7 +11,7 @@ use super::state::FunctionStats;
 
 pub(crate) fn build_functions_list_alloc(
     stats: &HashMap<u32, FunctionStats>,
-    config: &StatsConfig,
+    config: &FunctionStatsConfig,
     current_elapsed_ns: u64,
 ) -> JsonFunctionsList {
     use crate::lib_on::functions::alloc::shared::{alloc_metric, AllocMetric};
@@ -186,7 +186,7 @@ pub(crate) fn build_functions_list_alloc(
 
 pub(crate) fn build_functions_list_timing(
     stats: &HashMap<u32, FunctionStats>,
-    config: &StatsConfig,
+    config: &FunctionStatsConfig,
     current_elapsed_ns: u64,
 ) -> JsonFunctionsList {
     let exclude_wrapper = *crate::functions::EXCLUDE_WRAPPER;

@@ -20,9 +20,21 @@ mod lib_off;
 ///
 /// * `percentiles` - Array of percentile values (0.0-100.0) to compute, e.g. `[50, 95, 99.9]`. Default: `[95]`
 /// * `format` - Output format: `"table"` (default), `"json"`, `"json-pretty"`, or `"none"`
-/// * `limit` - Maximum number of functions in the report (0 = unlimited). Default: `15`
+/// * `limit` - Global maximum number of items shown in each report section (functions, channels, streams, futures, threads). `0` = unlimited.
+/// * `functions_limit` - Maximum number of functions shown in the report. Overrides `limit` for functions.
+/// * `channels_limit` - Maximum number of channels shown in the report. Overrides `limit` for channels.
+/// * `streams_limit` - Maximum number of streams shown in the report. Overrides `limit` for streams.
+/// * `futures_limit` - Maximum number of futures shown in the report. Overrides `limit` for futures.
+/// * `threads_limit` - Maximum number of threads shown in the report. Overrides `limit` for threads.
 /// * `output_path` - File path for the report. Defaults to stdout. Overridden by `HOTPATH_META_OUTPUT_PATH` env var.
 /// * `report` - Comma-separated sections to include: `"functions-timing"`, `"functions-alloc"`, `"channels"`, `"streams"`, `"futures"`, `"threads"`, `"debug"`, or `"all"`. Overridden by `HOTPATH_META_REPORT` env var.
+///
+/// Environment variable precedence for report output:
+/// `HOTPATH_META_LIMIT`, `HOTPATH_META_FUNCTIONS_LIMIT`,
+/// `HOTPATH_META_CHANNELS_LIMIT`, `HOTPATH_META_STREAMS_LIMIT`,
+/// `HOTPATH_META_FUTURES_LIMIT`, and `HOTPATH_META_THREADS_LIMIT`
+/// override the matching macro arguments. Per-resource env vars override
+/// `HOTPATH_META_LIMIT`.
 ///
 /// # Examples
 ///
@@ -58,6 +70,15 @@ mod lib_off;
 ///
 /// ```rust,no_run
 /// #[hotpath_meta::main(report = "functions-timing,channels")]
+/// fn main() {
+///     // Your code here
+/// }
+/// ```
+///
+/// Per-resource limits:
+///
+/// ```rust,no_run
+/// #[hotpath_meta::main(limit = 10, functions_limit = 20, channels_limit = 5)]
 /// fn main() {
 ///     // Your code here
 /// }

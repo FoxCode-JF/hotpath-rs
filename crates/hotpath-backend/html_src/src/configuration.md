@@ -10,6 +10,17 @@
 | `HOTPATH_OUTPUT_PATH` | Filesystem path for profiling reports. If unset, reports are written to `stdout`. When set, this env var takes precedence over programmatic `output_path` config. On Unix, use `/dev/stdout` or `/dev/stderr` to redirect to the standard streams. |
 | `HOTPATH_REPORT` | Comma-separated sections to include in report: `functions-timing`, `functions-alloc`, `channels`, `streams`, `futures`, `threads`, `tokio_runtime`, `debug`, or `all`. (default: `functions-timing,functions-alloc,threads`) |
 
+## Limits
+
+| Variable | Description |
+|----------|-------------|
+| `HOTPATH_LIMIT` | Maximum number of items shown in every report section (functions, channels, streams, futures, threads). Set to `0` for unlimited. Per-resource env vars (e.g. `HOTPATH_FUNCTIONS_LIMIT`) take precedence. (default: unset) |
+| `HOTPATH_FUNCTIONS_LIMIT` | Maximum number of functions shown in the report. Set to `0` for unlimited. (default: `15`) |
+| `HOTPATH_CHANNELS_LIMIT` | Maximum number of channels shown in the report. Set to `0` for unlimited. (default: `0`) |
+| `HOTPATH_STREAMS_LIMIT` | Maximum number of streams shown in the report. Set to `0` for unlimited. (default: `0`) |
+| `HOTPATH_FUTURES_LIMIT` | Maximum number of futures shown in the report. Set to `0` for unlimited. (default: `0`) |
+| `HOTPATH_THREADS_LIMIT` | Maximum number of threads shown in the report. Set to `0` for unlimited. (default: `5`) |
+
 ## Functions
 
 | Variable | Description |

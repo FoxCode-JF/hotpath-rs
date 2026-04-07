@@ -30,7 +30,7 @@ use crate::functions::{FunctionsQuery, FUNCTIONS_QUERY_TX, FUNCTIONS_STATE};
 use crate::lib_on::report;
 use crate::shared::Section;
 
-use crate::functions::StatsConfig;
+use crate::functions::FunctionStatsConfig;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "hotpath-alloc")] {
@@ -367,7 +367,7 @@ impl HotpathGuard {
                         }
                         recv(query_rx) -> result => {
                             if let Ok(query_request) = result {
-                                let config = StatsConfig {
+                                let config = FunctionStatsConfig {
                                     total_elapsed: worker_start_time.elapsed(),
                                     percentiles: worker_percentiles.clone(),
                                     caller_name: worker_caller_name,
@@ -538,18 +538,29 @@ fn apply_limit(len: usize, limit: usize) -> usize {
     }
 }
 
-fn make_config(state_guard: &FunctionsState, total_elapsed: std::time::Duration) -> StatsConfig {
-    StatsConfig {
+fn parse_usize_env(name: &str) -> Option<usize> {
+    std::env::var(name).ok().and_then(|s| s.parse().ok())
+}
+
+fn make_functions_config(
+    state_guard: &FunctionsState,
+    total_elapsed: std::time::Duration,
+) -> FunctionStatsConfig {
+    let limit = parse_usize_env("HOTPATH_FUNCTIONS_LIMIT")
+        .or_else(|| parse_usize_env("HOTPATH_LIMIT"))
+        .unwrap_or(state_guard.limit);
+
+    FunctionStatsConfig {
         total_elapsed,
         percentiles: state_guard.percentiles.clone(),
         caller_name: state_guard.caller_name,
-        limit: state_guard.limit,
+        limit,
     }
 }
 
 fn build_timing_list(
     stats: &HashMap<u32, FunctionStats>,
-    config: &StatsConfig,
+    config: &FunctionStatsConfig,
     elapsed_ns: u64,
 ) -> JsonFunctionsList {
     cfg_if::cfg_if! {
@@ -627,6 +638,24 @@ impl Drop for HotpathGuard {
             self.format
         };
 
+        if let Some(global) = parse_usize_env("HOTPATH_LIMIT") {
+            self.channels_limit = global;
+            self.streams_limit = global;
+            self.futures_limit = global;
+            self.threads_limit = global;
+        }
+        if let Some(v) = parse_usize_env("HOTPATH_CHANNELS_LIMIT") {
+            self.channels_limit = v;
+        }
+        if let Some(v) = parse_usize_env("HOTPATH_STREAMS_LIMIT") {
+            self.streams_limit = v;
+        }
+        if let Some(v) = parse_usize_env("HOTPATH_FUTURES_LIMIT") {
+            self.futures_limit = v;
+        }
+        if let Some(v) = parse_usize_env("HOTPATH_THREADS_LIMIT") {
+            self.threads_limit = v;
+        }
         let mut writer = match output.writer() {
             Ok(w) => w,
             Err(e) => {
@@ -652,7 +681,7 @@ impl Drop for HotpathGuard {
                             if let Ok(state_guard) = state.read() {
                                 let total_elapsed = end_time.duration_since(state_guard.start_time);
                                 let elapsed_ns = total_elapsed.as_nanos() as u64;
-                                let config = make_config(&state_guard, total_elapsed);
+                                let config = make_functions_config(&state_guard, total_elapsed);
                                 report.functions_timing =
                                     Some(build_timing_list(stats, &config, elapsed_ns));
                             }
@@ -665,7 +694,7 @@ impl Drop for HotpathGuard {
                                     if let Ok(state_guard) = state.read() {
                                         let total_elapsed = end_time.duration_since(state_guard.start_time);
                                         let elapsed_ns = total_elapsed.as_nanos() as u64;
-                                        let config = make_config(&state_guard, total_elapsed);
+                                        let config = make_functions_config(&state_guard, total_elapsed);
                                         report.functions_alloc = Some(
                                             build_functions_list_alloc(stats, &config, elapsed_ns),
                                         );
@@ -766,7 +795,7 @@ impl Drop for HotpathGuard {
                         if let Some(ref stats) = functions_stats {
                             if let Ok(state_guard) = state.read() {
                                 let total_elapsed = end_time.duration_since(state_guard.start_time);
-                                let config = make_config(&state_guard, total_elapsed);
+                                let config = make_functions_config(&state_guard, total_elapsed);
                                 let elapsed_ns = total_elapsed.as_nanos() as u64;
                                 let list = build_timing_list(stats, &config, elapsed_ns);
 
@@ -794,7 +823,7 @@ impl Drop for HotpathGuard {
                                 if let Some(ref stats) = functions_stats {
                                     if let Ok(state_guard) = state.read() {
                                         let total_elapsed = end_time.duration_since(state_guard.start_time);
-                                        let config = make_config(&state_guard, total_elapsed);
+                                        let config = make_functions_config(&state_guard, total_elapsed);
                                         let elapsed_ns = total_elapsed.as_nanos() as u64;
                                         let list = build_functions_list_alloc(stats, &config, elapsed_ns);
 

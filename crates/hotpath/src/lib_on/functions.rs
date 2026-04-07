@@ -35,7 +35,7 @@ cfg_if::cfg_if! {
     }
 }
 
-pub(crate) struct StatsConfig {
+pub(crate) struct FunctionStatsConfig {
     pub(crate) total_elapsed: Duration,
     pub(crate) percentiles: Vec<f64>,
     pub(crate) caller_name: &'static str,
