@@ -19,8 +19,8 @@ pub(crate) fn alloc_metric() -> AllocMetric {
 }
 
 #[inline]
-pub(crate) fn is_alloc_self_enabled() -> bool {
-    std::env::var("HOTPATH_META_ALLOC_SELF")
+pub(crate) fn is_alloc_cumulative_enabled() -> bool {
+    std::env::var("HOTPATH_META_ALLOC_CUMULATIVE")
         .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
         .unwrap_or(false)
 }

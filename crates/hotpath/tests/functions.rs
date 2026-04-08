@@ -533,7 +533,7 @@ pub mod tests {
             ("hotpath,hotpath-alloc", Some("true")),
         ];
 
-        for (features, alloc_self) in test_cases {
+        for (features, alloc_cumulative) in test_cases {
             let mut cmd = Command::new("cargo");
             cmd.args([
                 "run",
@@ -545,14 +545,14 @@ pub mod tests {
                 features,
             ]);
 
-            if let Some(val) = alloc_self {
-                cmd.env("HOTPATH_ALLOC_SELF", val);
+            if let Some(val) = alloc_cumulative {
+                cmd.env("HOTPATH_ALLOC_CUMULATIVE", val);
             }
 
             let output = cmd.output().expect("Failed to execute command");
 
-            let env_info = alloc_self
-                .map(|v| format!("HOTPATH_ALLOC_SELF={}", v))
+            let env_info = alloc_cumulative
+                .map(|v| format!("HOTPATH_ALLOC_CUMULATIVE={}", v))
                 .unwrap_or_else(|| "no env var".to_string());
 
             assert!(
@@ -1240,6 +1240,7 @@ pub mod tests {
                 "--features",
                 "hotpath,hotpath-alloc",
             ])
+            .env("HOTPATH_ALLOC_CUMULATIVE", "true")
             .env("HOTPATH_OUTPUT_FORMAT", "json")
             .env("HOTPATH_METRICS_SERVER_OFF", "true")
             .output()

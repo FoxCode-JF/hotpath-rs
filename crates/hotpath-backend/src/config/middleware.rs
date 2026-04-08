@@ -96,7 +96,7 @@ const SEO_MAPPINGS: &[SeoConfig] = &[
             },
             Faq {
                 question: "How does hotpath-rs track memory allocations?",
-                answer: "hotpath-rs uses a custom global allocator to intercept all memory allocations and attributes them to instrumented functions. Enable it with cargo run --features='hotpath,hotpath-alloc'. It reports per-function byte counts and allocation counts. By default tracking is cumulative (includes nested calls); set HOTPATH_ALLOC_SELF=true for exclusive (direct-only) allocations.",
+                answer: "hotpath-rs uses a custom global allocator to intercept all memory allocations and attributes them to instrumented functions. Enable it with cargo run --features='hotpath,hotpath-alloc'. It reports per-function byte counts and allocation counts. By default tracking is exclusive (direct-only allocations per function); set HOTPATH_ALLOC_CUMULATIVE=true to include nested calls (note: cumulative mode produces invalid results for recursive functions).",
             },
         ],
     },

@@ -43,13 +43,7 @@ pub(crate) fn build_functions_list_alloc(
             .filter(|s| !s.wrapper && s.has_data)
             .map(|s| primary_cache.get(&s.id).copied().unwrap_or(0))
             .sum()
-    } else if *super::guard::ALLOC_SELF {
-        stats
-            .values()
-            .filter(|s| s.has_data)
-            .map(|s| primary_cache.get(&s.id).copied().unwrap_or(0))
-            .sum()
-    } else {
+    } else if *super::guard::ALLOC_CUMULATIVE {
         let wrapper_total = stats
             .values()
             .find(|s| s.wrapper && s.has_data)
@@ -62,6 +56,12 @@ pub(crate) fn build_functions_list_alloc(
                 .map(|s| primary_cache.get(&s.id).copied().unwrap_or(0))
                 .sum()
         })
+    } else {
+        stats
+            .values()
+            .filter(|s| s.has_data)
+            .map(|s| primary_cache.get(&s.id).copied().unwrap_or(0))
+            .sum()
     };
 
     let mut entries: Vec<_> = stats
@@ -153,14 +153,14 @@ pub(crate) fn build_functions_list_alloc(
             AllocMetric::Bytes => "bytes",
             AllocMetric::Count => "count",
         };
-        if *super::guard::ALLOC_SELF {
+        if *super::guard::ALLOC_CUMULATIVE {
             format!(
-                "Exclusive allocation {} by each function (excluding nested calls).",
+                "Cumulative allocation {} during each function call (including nested calls).",
                 metric
             )
         } else {
             format!(
-                "Cumulative allocation {} during each function call (including nested calls).",
+                "Exclusive allocation {} by each function (excluding nested calls).",
                 metric
             )
         }

@@ -157,7 +157,9 @@ cargo run --features='hotpath,hotpath-alloc'
 
 ## Memory profiling modes
 
-By default, allocation tracking is **cumulative**, meaning that a function's allocation count includes all allocations made by nested instrumented functions it calls. Notably, it produces invalid results for recursive functions. To track only **exclusive** allocations (direct allocations made by each function, excluding nested instrumented calls), set the `HOTPATH_ALLOC_SELF=true` environment variable when running your program.
+By default, allocation tracking is **exclusive**, meaning each function only reports allocations made directly at its own level, excluding nested instrumented calls.
+
+To switch to **cumulative** mode (where a function's allocation count includes all allocations from nested instrumented calls), set `HOTPATH_ALLOC_CUMULATIVE=true`. Note that cumulative mode produces invalid results for recursive functions because the same allocations are counted multiple times as they propagate up through each recursive frame.
 
 ## Nightly features
 

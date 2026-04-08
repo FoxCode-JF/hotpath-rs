@@ -47,7 +47,7 @@ pub(crate) fn pop_alloc_stack() -> (u64, u64) {
 
         stack.depth.set(stack.depth.get() - 1);
 
-        if !super::shared::is_alloc_self_enabled() {
+        if super::shared::is_alloc_cumulative_enabled() {
             let parent = stack.depth.get() as usize;
             stack.elements[parent]
                 .bytes_total
