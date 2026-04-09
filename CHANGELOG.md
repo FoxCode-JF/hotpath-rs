@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2026-04-09
+
+### 🚀 Features
+
+- Add configurable macro limits [#298]
+
+- [**breaking**] Support float percentiles [#301]
+
+- [**breaking**] Adjust HotpathGuardBuilder API
+
+Remove `with_` prefix for all setters.
+
+
+- Add per report ENV limit config
+
+- [**breaking**] Exclusive alloc tracking by default, remove HOTPATH_ALLOC_SELF
+
+
+### 🐛 Bug Fixes
+
+- Fix duplicate meta allocator bug
+
+
+### ⚡ Performance
+
+- Make writing gauges and values faster
+
+
+### ⚙️ Miscellaneous Tasks
+
+- Update output_path docs
+
+- Release 0.15.0
+
+
 ## [0.14.1] - 2026-03-27
 
 ### 🚀 Features
