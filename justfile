@@ -65,8 +65,9 @@ fetch-badges:
     fetch marc2332-freya marc2332/freya
     fetch tqwewe-kameo tqwewe/kameo
     fetch tryandromeda-andromeda tryandromeda/andromeda
-    fetch nyudenkov-pysentry nyudenkov/pysentry
+    fetch maplibre-martin maplibre/martin
     fetch pawurb-hotpath-rs pawurb/hotpath-rs
+
     echo "Badges saved to ${DIR}/"
 
 # Benchmark the documentation server

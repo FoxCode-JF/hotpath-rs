@@ -25,6 +25,10 @@
       <span class="trusted-by-name">apache/horaedb</span>
       <img src="{{#asset-hash images/stars-apache-horaedb.svg}}" alt="horaedb GitHub stars">
     </a>
+    <a href="https://github.com/maplibre/martin" target="_blank" class="trusted-by-project">
+      <span class="trusted-by-name">maplibre/martin</span>
+      <img src="{{#asset-hash images/stars-maplibre-martin.svg}}" alt="martin GitHub stars">
+    </a>
     <a href="https://github.com/marc2332/freya" target="_blank" class="trusted-by-project">
       <span class="trusted-by-name">marc2332/freya</span>
       <img src="{{#asset-hash images/stars-marc2332-freya.svg}}" alt="freya GitHub stars">
@@ -36,10 +40,6 @@
     <a href="https://github.com/tryandromeda/andromeda" target="_blank" class="trusted-by-project">
       <span class="trusted-by-name">tryandromeda/andromeda</span>
       <img src="{{#asset-hash images/stars-tryandromeda-andromeda.svg}}" alt="andromeda GitHub stars">
-    </a>
-    <a href="https://github.com/nyudenkov/pysentry" target="_blank" class="trusted-by-project">
-      <span class="trusted-by-name">nyudenkov/pysentry</span>
-      <img src="{{#asset-hash images/stars-nyudenkov-pysentry.svg}}" alt="pysentry GitHub stars">
     </a>
   </div>
 </div>
