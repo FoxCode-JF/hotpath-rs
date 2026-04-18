@@ -72,6 +72,26 @@ Without instrumentation
 cargo build --example benchmark_alloc --release && hyperfine --warmup 3 './target/release/examples/benchmark_alloc'
 ```
 
+### Samply traces 
+
+Analyze [Samply](https://github.com/mstange/samply) traces by running the instrumented benchmarks:
+
+```bash
+cargo install --locked samply
+```
+
+#### Timing
+
+```bash
+cargo build --example benchmark_noop --features hotpath --profile profiling && samply record './target/profiling/examples/benchmark_noop'
+```
+
+#### Allocations
+
+```bash
+cargo build --example benchmark_alloc --features='hotpath,hotpath-alloc' --profile profiling && samply record './target/profiling/examples/benchmark_alloc'
+```
+
 ## Running documentation server
 
 Install the dependencies:
