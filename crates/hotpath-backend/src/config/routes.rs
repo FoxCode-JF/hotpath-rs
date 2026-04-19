@@ -148,6 +148,7 @@ pub fn app() -> Router {
                 .service(ServeDir::new("html").not_found_service(ServeFile::new("html/404.html"))),
         )
         .layer(from_fn(middleware::seo_titles))
+        .layer(from_fn(middleware::template_vars))
 }
 
 async fn health_check() -> impl IntoResponse {

@@ -193,6 +193,8 @@ const STATIC_EXTENSIONS: &[&str] = &[
     ".eot", ".mp4", ".webm",
 ];
 
+const TEMPLATE_VARS: &[(&str, &str)] = &[("{{HOTPATH_VERSION}}", "0.15")];
+
 const BASE_URL: &str = "https://hotpath.rs";
 const OG_IMAGE: &str = "https://hotpath.rs/images/hotpath-ferris.png";
 const SOFTWARE_APP_JSON_LD: &str = r#"{"@context":"https://schema.org","@type":"SoftwareApplication","name":"hotpath-rs","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS, Windows","programmingLanguage":"Rust","description":"A Rust performance profiler for runtime metrics, memory allocations, and async data flow monitoring. Profile functions, channels, futures, and streams.","url":"https://hotpath.rs","downloadUrl":"https://crates.io/crates/hotpath","codeRepository":"https://github.com/pawurb/hotpath-rs","license":"https://opensource.org/licenses/MIT","author":{"@type":"Person","name":"Pawel Urbanek","url":"https://pawelurbanek.com"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}"#;
@@ -258,6 +260,36 @@ pub fn init_logs() {
         .with_thread_ids(false)
         .with_line_number(true)
         .init();
+}
+
+pub async fn template_vars(request: Request, next: Next) -> Response {
+    let response = next.run(request).await;
+
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+
+    if !content_type.contains("text/html") {
+        return response;
+    }
+
+    let (parts, body) = response.into_parts();
+
+    let bytes = match body.collect().await {
+        Ok(collected) => collected.to_bytes(),
+        Err(_) => return Response::from_parts(parts, Body::empty()),
+    };
+
+    let mut html = String::from_utf8_lossy(&bytes).into_owned();
+    for (token, value) in TEMPLATE_VARS {
+        if html.contains(token) {
+            html = html.replace(token, value);
+        }
+    }
+
+    Response::from_parts(parts, Body::from(html)).into_response()
 }
 
 pub async fn seo_titles(request: Request, next: Next) -> Response {

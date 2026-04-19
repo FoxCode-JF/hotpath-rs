@@ -8,7 +8,7 @@ Enable the `tokio` feature:
 
 ```toml
 [dependencies]
-hotpath = { version = "0.13", features = ["tokio"] }
+hotpath = { version = "{{HOTPATH_VERSION}}", features = ["tokio"] }
 ```
 
 Then call `tokio_runtime!()` inside your async main:
