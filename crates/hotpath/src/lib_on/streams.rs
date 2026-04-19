@@ -114,9 +114,7 @@ pub(crate) struct StreamsState {
     pub(crate) completion_rx: Mutex<Option<CbReceiver<()>>>,
 }
 
-pub(crate) type StreamStatsState = StreamsState;
-
-pub(crate) static STREAMS_STATE: OnceLock<StreamStatsState> = OnceLock::new();
+pub(crate) static STREAMS_STATE: OnceLock<StreamsState> = OnceLock::new();
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn process_stream_event(state: &mut StreamsInternalState, event: StreamEvent) {
@@ -164,7 +162,7 @@ fn process_stream_event(state: &mut StreamsInternalState, event: StreamEvent) {
 /// Initialize the stream statistics collection system (called on first instrumented stream).
 /// Returns a reference to the global state.
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
-pub(crate) fn init_streams_state() -> &'static StreamStatsState {
+pub(crate) fn init_streams_state() -> &'static StreamsState {
     STREAMS_STATE.get_or_init(|| {
         crate::lib_on::START_TIME.get_or_init(Instant::now);
 

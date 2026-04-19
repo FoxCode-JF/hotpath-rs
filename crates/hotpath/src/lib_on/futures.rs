@@ -181,9 +181,7 @@ pub(crate) struct FuturesState {
     pub(crate) completion_rx: Mutex<Option<CbReceiver<()>>>,
 }
 
-pub(crate) type FuturesStatsState = FuturesState;
-
-pub(crate) static FUTURES_STATE: OnceLock<FuturesStatsState> = OnceLock::new();
+pub(crate) static FUTURES_STATE: OnceLock<FuturesState> = OnceLock::new();
 
 /// Initialize the futures event collection system (called on first instrumented future).
 #[doc(hidden)]
@@ -193,7 +191,7 @@ pub fn init_futures_state() {
 }
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
-fn get_futures_state() -> &'static FuturesStatsState {
+fn get_futures_state() -> &'static FuturesState {
     FUTURES_STATE.get_or_init(|| {
         START_TIME.get_or_init(Instant::now);
 
