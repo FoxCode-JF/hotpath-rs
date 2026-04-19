@@ -5,95 +5,12 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 use std::time::Duration;
 
+use crate::functions::batch::{BatchedMeasurement, MeasurementBatch};
 use crate::instant::Instant;
 
-const BATCH_SIZE: usize = 64;
-const FLUSH_INTERVAL_MS: u64 = 50;
-
-struct MeasurementBatch {
-    measurements: Vec<Measurement>,
-    last_flush: Instant,
-    sender: Option<Sender<Measurement>>,
-}
-
-impl MeasurementBatch {
-    fn new() -> Self {
-        Self {
-            measurements: Vec::with_capacity(BATCH_SIZE),
-            last_flush: Instant::now(),
-            sender: None,
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn add(
-        &mut self,
-        name: &'static str,
-        bytes_total: Option<u64>,
-        count_total: Option<u64>,
-        duration_ns: u64,
-        elapsed_since_start_ns: u64,
-        wrapper: bool,
-        tid: Option<u64>,
-        result_log: Option<String>,
-    ) {
-        if self.sender.is_none() {
-            if let Some(arc_swap) = super::super::FUNCTIONS_STATE.get() {
-                if let Some(state) = arc_swap.load_full() {
-                    if let Ok(state_guard) = state.read() {
-                        self.sender = state_guard.sender.clone();
-                    }
-                }
-            }
-        }
-
-        if self.sender.is_none() {
-            return;
-        };
-
-        let measurement = Measurement {
-            name,
-            bytes_total,
-            count_total,
-            duration_ns,
-            elapsed_since_start_ns,
-            wrapper,
-            tid,
-            result_log,
-        };
-
-        self.measurements.push(measurement);
-
-        let should_flush = self.measurements.len() >= BATCH_SIZE
-            || self.last_flush.elapsed() >= Duration::from_millis(FLUSH_INTERVAL_MS);
-
-        if should_flush {
-            self.flush();
-        }
-    }
-
-    fn flush(&mut self) {
-        if self.measurements.is_empty() {
-            return;
-        }
-
-        let sender = self.sender.as_ref().expect("Sender must exist");
-        for measurement in self.measurements.drain(..) {
-            let _ = sender.send(measurement);
-        }
-
-        self.last_flush = Instant::now();
-    }
-}
-
-impl Drop for MeasurementBatch {
-    fn drop(&mut self) {
-        self.flush();
-    }
-}
-
 thread_local! {
-    static MEASUREMENT_BATCH: RefCell<MeasurementBatch> = RefCell::new(MeasurementBatch::new());
+    static MEASUREMENT_BATCH: RefCell<MeasurementBatch<Measurement>> =
+        RefCell::new(MeasurementBatch::new());
 }
 
 pub(crate) fn flush_batch() {
@@ -112,6 +29,19 @@ pub(crate) struct Measurement {
     pub(crate) wrapper: bool,
     pub(crate) tid: Option<u64>,
     pub(crate) result_log: Option<String>,
+}
+
+impl BatchedMeasurement for Measurement {
+    fn elapsed_since_start_ns(&self) -> u64 {
+        self.elapsed_since_start_ns
+    }
+
+    fn fetch_sender() -> Option<Sender<Self>> {
+        let arc_swap = super::super::FUNCTIONS_STATE.get()?;
+        let state = arc_swap.load_full()?;
+        let state_guard = state.read().ok()?;
+        state_guard.sender.clone()
+    }
 }
 
 type LogEntry = (
@@ -425,7 +355,7 @@ pub(crate) fn send_alloc_measurement_with_log(
     }
 
     MEASUREMENT_BATCH.with(|batch| {
-        batch.borrow_mut().add(
+        batch.borrow_mut().add(Measurement {
             name,
             bytes_total,
             count_total,
@@ -434,6 +364,6 @@ pub(crate) fn send_alloc_measurement_with_log(
             wrapper,
             tid,
             result_log,
-        );
+        });
     });
 }
