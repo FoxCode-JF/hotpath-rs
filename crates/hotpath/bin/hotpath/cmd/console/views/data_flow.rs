@@ -213,7 +213,7 @@ pub(crate) fn render_futures_panel(
         Cell::from("Label"),
         Cell::from("Calls"),
         Cell::from("Polls"),
-        Cell::from("Avg Poll"),
+        Cell::from("Avg Total"),
     ])
     .style(common_styles::HEADER_STYLE_CYAN)
     .height(1);
@@ -222,15 +222,15 @@ pub(crate) fn render_futures_panel(
         .iter()
         .map(|entry| {
             let display_label = hotpath::shorten_function_name(&entry.label);
-            let avg_poll_ns = entry
+            let avg_total_ns = entry
                 .total_poll_duration_ns
-                .checked_div(entry.total_polls)
+                .checked_div(entry.call_count)
                 .unwrap_or(0);
             Row::new(vec![
                 Cell::from(truncate_left(&display_label, label_width)),
                 Cell::from(entry.call_count.to_string()),
                 Cell::from(entry.total_polls.to_string()),
-                Cell::from(hotpath::format_duration(avg_poll_ns)),
+                Cell::from(hotpath::format_duration(avg_total_ns)),
             ])
         })
         .collect();
