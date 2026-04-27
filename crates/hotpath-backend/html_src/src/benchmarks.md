@@ -45,3 +45,5 @@ HOTPATH_REPORT_LABEL="$(git branch --show-current)@$(git rev-parse --short HEAD)
 ```
 
 for cargo command to annotate reports with current git branch and commit hash.
+
+See [compare.sh](https://github.com/pawurb/hotpath-rs/blob/main/scripts/compare.sh) for an example of A/B benchmark used in hotpath development.

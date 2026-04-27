@@ -37,6 +37,14 @@ https://github.com/user-attachments/assets/2e890417-2b43-4b1b-8657-a5ef3b458153
 - **MCP server for AI agents** - built-in [Model Context Protocol](https://modelcontextprotocol.io/) server that lets LLMs query profiling data in real-time.
 - **GitHub Actions integration** - configure CI to automatically benchmark your program against a base branch for each PR.
 
+## Roadmap 
+
+- [ ] global CPU sampling
+- [ ] per-function CPU sampling
+- [ ] interactive, live CPU traces TUI
+- [ ] channels perf stats
+- [ ] flamegraphs generation
+
 ## Getting Started
 
 ### Installation
