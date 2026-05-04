@@ -17,7 +17,10 @@
   </div>
 </div>
 
-[hotpath-rs](https://github.com/pawurb/hotpath-rs) is an easy-to-configure Rust performance profiler that shows exactly where your code spends time and allocates. Instrument functions, channels, futures, and streams to quickly find bottlenecks and focus optimizations where they matter most. Get actionable insights into time, memory, and async data flow with minimal setup.
+[hotpath-rs](https://github.com/pawurb/hotpath-rs) is an easy-to-configure Rust performance profiler that shows exactly where your code spends time, burns CPU, and allocates. 
+
+It helps you distinguish between functions that are slow because they **wait** and those that are slow because they **use CPU**. Instrument functions, channels, futures, and streams to find bottlenecks and focus optimizations where they matter most. Quickly diagnose whether a bottleneck is I/O-bound or CPU-bound. Get actionable insights into time, memory, and async data flow with minimal setup.
+
 <div style="clear: both;"></div>
 
 <div class="trusted-by">
@@ -114,6 +117,7 @@ hotpath = "{{HOTPATH_VERSION}}"
 
 [features]
 hotpath = ["hotpath/hotpath"]
+hotpath-cpu = ["hotpath/hotpath-cpu"]
 hotpath-alloc = ["hotpath/hotpath-alloc"]
 ```
 

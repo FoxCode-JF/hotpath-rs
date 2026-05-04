@@ -1,7 +1,9 @@
-# <img src="media/hotpath-logo2.png" alt="hotpath-rs logo" width="80px" align="left"> hotpath - real-time Rust performance, memory and data flow profiler
+# <img src="media/hotpath-logo2.png" alt="hotpath-rs logo" width="80px" align="left"> hotpath - real-time Rust performance, CPU, memory and data flow profiler
 [![Latest Version](https://img.shields.io/crates/v/hotpath.svg)](https://crates.io/crates/hotpath) [![Downloads](https://img.shields.io/crates/d/hotpath?cacheSeconds=86400)](https://crates.io/crates/hotpath) [![GH Actions](https://github.com/pawurb/hotpath/actions/workflows/ci.yml/badge.svg)](https://github.com/pawurb/hotpath/actions)
 
-hotpath-rs is an easy-to-configure Rust performance profiler that shows exactly where your code spends time and allocates. Instrument functions, channels, futures, and streams to quickly find bottlenecks and focus optimizations where they matter most. Get actionable insights into time, memory, and async data flow with minimal setup.
+hotpath-rs is an easy-to-configure Rust performance profiler that shows exactly where your code spends time, burns CPU, and allocates. 
+
+It helps you distinguish between functions that are slow because they **wait** and those that are slow because they **use CPU**. Instrument functions, channels, futures, and streams to find bottlenecks and focus optimizations where they matter most. Quickly diagnose whether a bottleneck is I/O-bound or CPU-bound. Get actionable insights into time, memory, and async data flow with minimal setup.
 
 Try the TUI demo via SSH - no installation required:
 
@@ -27,6 +29,7 @@ https://github.com/user-attachments/assets/2e890417-2b43-4b1b-8657-a5ef3b458153
 
 - **Zero-cost when disabled** - fully gated by a feature flag.
 - **Low-overhead** time/memory profiling for both sync and async code.
+- **CPU profiling** - powered by [samply](https://github.com/mstange/samply). Analyze CPU usage of instrumented functions or explore full flamegraphs.
 - **Live TUI dashboard** - real-time monitoring of performance data flow metrics in TUI dashboard (built with [ratatui.rs](https://ratatui.rs/)).
 - **Static reports for one-off programs** - alternatively print profiling summaries without running the TUI.
 - **Memory allocation tracking** - track bytes allocated and allocation counts per function.
@@ -57,6 +60,7 @@ hotpath = "0.15"
 
 [features]
 hotpath = ["hotpath/hotpath"]
+hotpath-cpu = ["hotpath/hotpath-cpu"]
 hotpath-alloc = ["hotpath/hotpath-alloc"]
 ```
 
