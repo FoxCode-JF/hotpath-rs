@@ -149,6 +149,29 @@ jobs:
           chmod +x ~/.cargo/bin/samply
           sudo chown root:wheel ~/.cargo/bin/samply
           sudo chmod u+s ~/.cargo/bin/samply
+
+  cpu-linux:
+    name: cpu tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: linux-cpu
+      - name: Enable perf_event access
+        run: |
+          echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+          echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+          echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+      - name: Download samply binary from release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.cargo/bin
+          gh release download samply-release -p samply -D ~/.cargo/bin --repo ${{ github.repository }}
+          chmod +x ~/.cargo/bin/samply
       - name: Build hotpath-samply wrapper
         run: |
           cargo build -p hotpath --bin hotpath-samply --features "hotpath,hotpath-cpu"
@@ -156,4 +179,4 @@ jobs:
         env:
           HOTPATH_SAMPLY_WRAPPER_BIN: ${{ github.workspace }}/target/debug/hotpath-samply
         run: |
-          cargo test --features "hotpath,hotpath-cpu" --test functions_cpu -- --nocapture --test-threads=1
+          setsid -w cargo test --features "hotpath,hotpath-cpu" --test functions_cpu -- --nocapture --test-threads=1
