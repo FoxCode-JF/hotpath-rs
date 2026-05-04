@@ -129,6 +129,13 @@ pub struct JsonFunctionsCpuList {
     pub total_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum JsonFunctionsCpu {
+    Ok(JsonFunctionsCpuList),
+    Error { message: String },
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CpuSnapshotStatus {
@@ -685,7 +692,7 @@ pub struct JsonReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub functions_alloc: Option<JsonFunctionsList>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub functions_cpu: Option<JsonFunctionsCpuList>,
+    pub functions_cpu: Option<JsonFunctionsCpu>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channels: Option<JsonChannelsList>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -779,6 +786,30 @@ mod parse_tests {
                 Some(val),
                 "round-trip failed for {val}: formatted as '{formatted}'"
             );
+        }
+    }
+
+    #[test]
+    fn json_functions_cpu_accepts_result_list_shape() {
+        let result = r#"{
+            "time_elapsed":"1s","total_elapsed_ns":1,
+            "total_samples":10,"attributed_samples":5,
+            "description":"d","caller_name":"main","data":[]
+        }"#;
+        match serde_json::from_str::<JsonFunctionsCpu>(result).unwrap() {
+            JsonFunctionsCpu::Ok(list) => assert_eq!(list.caller_name, "main"),
+            _ => panic!("expected Ok variant"),
+        }
+    }
+
+    #[test]
+    fn json_functions_cpu_accepts_error_shape() {
+        let body = r#"{"message":"samply worker not started"}"#;
+        match serde_json::from_str::<JsonFunctionsCpu>(body).unwrap() {
+            JsonFunctionsCpu::Error { message } => {
+                assert_eq!(message, "samply worker not started")
+            }
+            _ => panic!("expected Error variant"),
         }
     }
 }

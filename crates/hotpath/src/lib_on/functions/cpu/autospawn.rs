@@ -96,34 +96,35 @@ pub(crate) fn current_session() -> Option<SessionInfo> {
     })
 }
 
-pub(crate) fn stop() -> Option<PathBuf> {
+pub(crate) fn stop() -> Result<PathBuf, String> {
     let handle = HANDLE
         .get()
-        .and_then(|m| m.lock().ok().and_then(|mut g| g.take()));
-    let handle = handle?;
+        .and_then(|m| m.lock().ok().and_then(|mut g| g.take()))
+        .ok_or_else(|| "samply worker not started".to_string())?;
     if let Err(e) = fs::write(&handle.stop_path, b"") {
-        warn!(
-            "failed to create stop signal {}: {}",
-            handle.stop_path.display(),
-            e
-        );
-        return None;
+        return Err(format!(
+            "failed to create stop signal {}: {e}",
+            handle.stop_path.display()
+        ));
     }
 
     let t0 = Instant::now();
     let deadline = t0 + Duration::from_secs(15);
     loop {
         if handle.done_path.exists() {
-            return Some(handle.profile_path);
+            let body = fs::read_to_string(&handle.done_path).unwrap_or_default();
+            let trimmed = body.trim();
+            if trimmed.is_empty() {
+                return Ok(handle.profile_path);
+            }
+            return Err(trimmed.to_string());
         }
 
         if Instant::now() >= deadline {
-            warn!(
-                "timed out waiting for CPU profile done sentinel {} in session {}",
-                handle.done_path.display(),
+            return Err(format!(
+                "timed out waiting for samply worker (session {})",
                 handle.session_dir.display()
-            );
-            return None;
+            ));
         }
 
         thread::sleep(Duration::from_millis(100));

@@ -97,12 +97,13 @@ pub(crate) fn try_spawn_snapshot() -> bool {
     true
 }
 
+#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
 fn run_snapshot() {
     let started = Instant::now();
     let path = match autospawn::stop() {
-        Some(p) => p,
-        None => {
-            set_snapshot_error("samply autospawn not running or stop timed out");
+        Ok(p) => p,
+        Err(e) => {
+            set_snapshot_error(&e);
             return;
         }
     };
@@ -184,7 +185,6 @@ pub(crate) fn get_cpu_envelope() -> JsonFunctionsCpuEnvelope {
     }
 }
 
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn format_percent(numer: u64, denom: u64) -> String {
     if denom == 0 {
         "0.00%".to_string()
@@ -250,7 +250,6 @@ pub(crate) fn build_cpu_json(
     }
 }
 
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn styled_header(text: &str) -> Cell {
     if crate::output::use_colors() {
         Cell::new(text)
@@ -261,7 +260,6 @@ fn styled_header(text: &str) -> Cell {
     }
 }
 
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 fn print_table<W: Write>(table: &Table, writer: &mut W) {
     if crate::output::use_colors() {
         let _ = table.print_tty(false);
@@ -270,7 +268,6 @@ fn print_table<W: Write>(table: &Table, writer: &mut W) {
     }
 }
 
-#[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
 pub(crate) fn report_functions_cpu_table<W: Write>(writer: &mut W, list: &JsonFunctionsCpuList) {
     if list.data.is_empty() {
         return;
@@ -299,4 +296,24 @@ pub(crate) fn report_functions_cpu_table<W: Write>(writer: &mut W, list: &JsonFu
     let _ = writeln!(writer, "cpu - {} ({})", list.description, info);
     print_table(&table, writer);
     let _ = writeln!(writer);
+}
+
+pub(crate) fn report_functions_cpu_error_table<W: Write>(writer: &mut W, message: &str) {
+    let mut table = Table::new();
+    table.add_row(Row::new(vec![styled_error_header("Error")]));
+    table.add_row(Row::new(vec![Cell::new(message)]));
+
+    let _ = writeln!(writer, "cpu - report unavailable");
+    print_table(&table, writer);
+    let _ = writeln!(writer);
+}
+
+fn styled_error_header(text: &str) -> Cell {
+    if crate::output::use_colors() {
+        Cell::new(text)
+            .with_style(Attr::Bold)
+            .with_style(Attr::ForegroundColor(color::RED))
+    } else {
+        Cell::new(text).with_style(Attr::Bold)
+    }
 }

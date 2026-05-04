@@ -620,36 +620,43 @@ impl Drop for HotpathGuard {
         let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
         #[cfg(feature = "hotpath-cpu")]
-        let cpu_report = if self.sections.contains(&Section::FunctionsCpu) {
+        let cpu_report: Option<Result<crate::functions::cpu::CpuReport, String>> = if self
+            .sections
+            .contains(&Section::FunctionsCpu)
+        {
             let caller_name = self
                 .state
                 .read()
                 .map(|state| state.caller_name)
                 .unwrap_or("unknown");
             match crate::functions::cpu::autospawn::stop() {
-                Some(profile_path) => {
-                    let report = crate::functions::cpu::build_cpu_report_from_path(
+                Ok(profile_path) => {
+                    match crate::functions::cpu::build_cpu_report_from_path(
                         caller_name,
                         &profile_path,
-                    );
-                    match report.as_ref() {
-                        Some(r) => info!(
-                            "cpu report: caller={caller_name} total_samples={} attributed_samples={} stats_rows={}",
-                            r.total_samples,
-                            r.attributed_samples,
-                            r.stats.len()
-                        ),
-                        None => warn!(
-                            "cpu report: no data for caller={} profile={}",
-                            caller_name,
-                            profile_path.display()
-                        ),
+                    ) {
+                        Some(r) => {
+                            info!(
+                                    "cpu report: caller={caller_name} total_samples={} attributed_samples={} stats_rows={}",
+                                    r.total_samples,
+                                    r.attributed_samples,
+                                    r.stats.len()
+                                );
+                            Some(Ok(r))
+                        }
+                        None => {
+                            let msg = format!(
+                                "no data parsed from samply profile {}",
+                                profile_path.display()
+                            );
+                            warn!("cpu report: {msg}");
+                            Some(Err(msg))
+                        }
                     }
-                    report
                 }
-                None => {
-                    warn!("cpu report: no finalized samply profile for caller={caller_name}");
-                    None
+                Err(e) => {
+                    warn!("cpu report: {e}");
+                    Some(Err(e))
                 }
             }
         } else {
@@ -786,18 +793,29 @@ impl Drop for HotpathGuard {
                     Section::FunctionsCpu =>
                     {
                         #[cfg(feature = "hotpath-cpu")]
-                        if let Some(ref cpu) = cpu_report {
-                            if let Ok(state_guard) = state.read() {
-                                let total_elapsed = end_time.duration_since(state_guard.start_time);
-                                let elapsed_ns = total_elapsed.as_nanos() as u64;
-                                let config = make_functions_config(&state_guard, total_elapsed);
-                                report.functions_cpu = Some(crate::functions::cpu::build_cpu_json(
-                                    cpu,
-                                    total_elapsed,
-                                    elapsed_ns,
-                                    config.limit,
-                                ));
+                        match cpu_report.as_ref() {
+                            Some(Ok(cpu)) => {
+                                if let Ok(state_guard) = state.read() {
+                                    let total_elapsed =
+                                        end_time.duration_since(state_guard.start_time);
+                                    let elapsed_ns = total_elapsed.as_nanos() as u64;
+                                    let config = make_functions_config(&state_guard, total_elapsed);
+                                    let list = crate::functions::cpu::build_cpu_json(
+                                        cpu,
+                                        total_elapsed,
+                                        elapsed_ns,
+                                        config.limit,
+                                    );
+                                    report.functions_cpu =
+                                        Some(crate::json::JsonFunctionsCpu::Ok(list));
+                                }
                             }
+                            Some(Err(msg)) => {
+                                report.functions_cpu = Some(crate::json::JsonFunctionsCpu::Error {
+                                    message: msg.clone(),
+                                });
+                            }
+                            None => {}
                         }
                     }
                     Section::Channels => {
@@ -948,23 +966,33 @@ impl Drop for HotpathGuard {
                     {
                         #[cfg(feature = "hotpath-cpu")]
                         if matches!(format, Format::Table) {
-                            if let Some(ref cpu) = cpu_report {
-                                if let Ok(state_guard) = state.read() {
-                                    let total_elapsed =
-                                        end_time.duration_since(state_guard.start_time);
-                                    let elapsed_ns = total_elapsed.as_nanos() as u64;
-                                    let config = make_functions_config(&state_guard, total_elapsed);
-                                    let list = crate::functions::cpu::build_cpu_json(
-                                        cpu,
-                                        total_elapsed,
-                                        elapsed_ns,
-                                        config.limit,
-                                    );
-                                    crate::functions::cpu::report_functions_cpu_table(
+                            match cpu_report.as_ref() {
+                                Some(Ok(cpu)) => {
+                                    if let Ok(state_guard) = state.read() {
+                                        let total_elapsed =
+                                            end_time.duration_since(state_guard.start_time);
+                                        let elapsed_ns = total_elapsed.as_nanos() as u64;
+                                        let config =
+                                            make_functions_config(&state_guard, total_elapsed);
+                                        let list = crate::functions::cpu::build_cpu_json(
+                                            cpu,
+                                            total_elapsed,
+                                            elapsed_ns,
+                                            config.limit,
+                                        );
+                                        crate::functions::cpu::report_functions_cpu_table(
+                                            &mut writer,
+                                            &list,
+                                        );
+                                    }
+                                }
+                                Some(Err(msg)) => {
+                                    crate::functions::cpu::report_functions_cpu_error_table(
                                         &mut writer,
-                                        &list,
+                                        msg,
                                     );
                                 }
+                                None => {}
                             }
                         }
                     }

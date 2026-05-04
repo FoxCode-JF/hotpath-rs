@@ -85,6 +85,16 @@ fn run_worker(mut args: impl Iterator<Item = String>) -> Result<(), String> {
     let stop_path = session_dir.join("stop-profiling");
     let done_path = session_dir.join("done");
 
+    let result = run_worker_inner(pid, &output_path, &stop_path);
+    write_done(&done_path, result.as_ref().err().map(|s| s.as_str()));
+    result
+}
+
+fn run_worker_inner(
+    pid: u32,
+    output_path: &std::path::Path,
+    stop_path: &std::path::Path,
+) -> Result<(), String> {
     let samply_stdout =
         child_stdio().map_err(|e| format!("failed to open samply stdout log: {e}"))?;
     let samply_stderr =
@@ -128,7 +138,6 @@ fn run_worker(mut args: impl Iterator<Item = String>) -> Result<(), String> {
                         output_path.display()
                     ));
                 }
-                signal_done(&done_path);
                 return Ok(());
             }
             Ok(None) => thread::sleep(Duration::from_millis(100)),
@@ -175,7 +184,7 @@ fn run_worker(mut args: impl Iterator<Item = String>) -> Result<(), String> {
             }
         }
     };
-    match std::fs::metadata(&output_path) {
+    match std::fs::metadata(output_path) {
         Ok(metadata) => info!(
             "profile written path={} size={} bytes",
             output_path.display(),
@@ -195,12 +204,12 @@ fn run_worker(mut args: impl Iterator<Item = String>) -> Result<(), String> {
         ));
     }
 
-    signal_done(&done_path);
     Ok(())
 }
 
-fn signal_done(done_path: &std::path::Path) {
-    if let Err(e) = std::fs::write(done_path, b"") {
+fn write_done(done_path: &std::path::Path, error: Option<&str>) {
+    let body = error.unwrap_or("");
+    if let Err(e) = std::fs::write(done_path, body) {
         warn!(
             "failed to write done sentinel {}: {}",
             done_path.display(),
