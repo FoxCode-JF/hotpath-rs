@@ -77,4 +77,38 @@ pub mod tests {
             );
         }
     }
+
+    // cargo run -p test-tokio-async --example cpu_labels --features hotpath,hotpath-cpu
+    #[test]
+    fn test_cpu_labels_output() {
+        let output = Command::new("cargo")
+            .args([
+                "run",
+                "-p",
+                "test-tokio-async",
+                "--example",
+                "cpu_labels",
+                "--features",
+                "hotpath,hotpath-cpu",
+            ])
+            .env("HOTPATH_REPORT", "functions-cpu")
+            .output()
+            .expect("Failed to execute command");
+
+        assert!(
+            output.status.success(),
+            "Process did not exit successfully.\n\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let expected_content = ["custom_heavy", "cpu_labels::heavy_no_label"];
+
+        for expected in expected_content {
+            assert!(
+                stdout.contains(expected),
+                "Expected:\n{expected}\n\nGot:\n{stdout}",
+            );
+        }
+    }
 }

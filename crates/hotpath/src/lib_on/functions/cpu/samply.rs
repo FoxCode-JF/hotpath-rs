@@ -40,7 +40,13 @@ pub(crate) fn build_cpu_report_from_path(
         return None;
     }
 
-    let eligible_symbols: HashSet<&'static str> = display_to_id.keys().copied().collect();
+    let label_to_symbol = crate::lib_on::functions::get_cpu_label_aliases();
+    let mut match_to_display: HashMap<&'static str, &'static str> =
+        HashMap::with_capacity(display_to_id.len());
+    for &display in display_to_id.keys() {
+        let match_key = label_to_symbol.get(display).copied().unwrap_or(display);
+        match_to_display.insert(match_key, display);
+    }
 
     let primary_lib_name = std::env::current_exe()
         .ok()
@@ -64,7 +70,7 @@ pub(crate) fn build_cpu_report_from_path(
             if !is_primary {
                 return None;
             }
-            let idx = build_lib_index(lib, &eligible_symbols)?;
+            let idx = build_lib_index(lib, &match_to_display)?;
             Some((i, idx))
         });
     let total_matches: usize = primary.as_ref().map(|(_, i)| i.ranges.len()).unwrap_or(0);
@@ -222,7 +228,10 @@ impl LibSymbolIndex {
 }
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
-fn build_lib_index(lib: &Lib, eligible: &HashSet<&'static str>) -> Option<LibSymbolIndex> {
+fn build_lib_index(
+    lib: &Lib,
+    match_to_display: &HashMap<&'static str, &'static str>,
+) -> Option<LibSymbolIndex> {
     let path = lib
         .debug_path
         .as_deref()
@@ -249,8 +258,8 @@ fn build_lib_index(lib: &Lib, eligible: &HashSet<&'static str>) -> Option<LibSym
         };
         let demangled = format!("{:#}", rustc_demangle::demangle(raw_name));
         let normalized = strip_hash_suffix(&demangled);
-        if let Some(matched) = match_eligible_symbol(normalized, eligible) {
-            matched_pending.push((rel, sym.size(), *matched));
+        if let Some(display) = match_eligible_symbol(normalized, match_to_display) {
+            matched_pending.push((rel, sym.size(), display));
         }
     }
     all_starts.sort_unstable();
@@ -309,22 +318,23 @@ fn strip_hash_suffix(s: &str) -> &str {
 }
 
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure)]
-fn match_eligible_symbol<'a>(
+fn match_eligible_symbol(
     normalized: &str,
-    eligible: &'a HashSet<&'static str>,
-) -> Option<&'a &'static str> {
-    if let Some(exact) = eligible.get(normalized) {
-        return Some(exact);
+    match_to_display: &HashMap<&'static str, &'static str>,
+) -> Option<&'static str> {
+    if let Some(&display) = match_to_display.get(normalized) {
+        return Some(display);
     }
 
-    eligible
+    match_to_display
         .iter()
-        .filter(|candidate| {
+        .filter(|(candidate, _)| {
             normalized
                 .strip_prefix(**candidate)
                 .is_some_and(|rest| rest.starts_with("::"))
         })
-        .max_by_key(|candidate| candidate.len())
+        .max_by_key(|(candidate, _)| candidate.len())
+        .map(|(_, &display)| display)
 }
 
 fn sample_cpu_weight(
@@ -344,9 +354,15 @@ fn sample_cpu_weight(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::HashMap;
 
     use crate::lib_on::functions::cpu::samply::{match_eligible_symbol, strip_hash_suffix};
+
+    fn identity_map<const N: usize>(
+        items: [&'static str; N],
+    ) -> HashMap<&'static str, &'static str> {
+        items.into_iter().map(|s| (s, s)).collect()
+    }
 
     #[test]
     fn strips_rust_hash_suffix() {
@@ -359,7 +375,7 @@ mod tests {
 
     #[test]
     fn matches_async_closure_symbol_by_prefix() {
-        let eligible = HashSet::from([
+        let eligible = identity_map([
             "mevlog::misc::rpc_tracing::rpc_tx_calls",
             "mevlog::misc::shared_init::init_deps",
         ]);
@@ -369,24 +385,28 @@ mod tests {
             &eligible,
         );
 
-        assert_eq!(
-            matched.copied(),
-            Some("mevlog::misc::rpc_tracing::rpc_tx_calls")
-        );
+        assert_eq!(matched, Some("mevlog::misc::rpc_tracing::rpc_tx_calls"));
     }
 
     #[test]
     fn prefers_longest_prefix_match() {
-        let eligible = HashSet::from(["mevlog::misc", "mevlog::misc::rpc_tracing::rpc_tx_calls"]);
+        let eligible = identity_map(["mevlog::misc", "mevlog::misc::rpc_tracing::rpc_tx_calls"]);
 
         let matched = match_eligible_symbol(
             "mevlog::misc::rpc_tracing::rpc_tx_calls::{{closure}}",
             &eligible,
         );
 
-        assert_eq!(
-            matched.copied(),
-            Some("mevlog::misc::rpc_tracing::rpc_tx_calls")
-        );
+        assert_eq!(matched, Some("mevlog::misc::rpc_tracing::rpc_tx_calls"));
+    }
+
+    #[test]
+    fn label_alias_resolves_to_display_name() {
+        let mut map: HashMap<&'static str, &'static str> = HashMap::new();
+        map.insert("mevlog::compute_hash", "custom_label");
+
+        let matched = match_eligible_symbol("mevlog::compute_hash::{{closure}}", &map);
+
+        assert_eq!(matched, Some("custom_label"));
     }
 }

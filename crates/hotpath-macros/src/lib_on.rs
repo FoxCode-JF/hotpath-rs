@@ -523,6 +523,25 @@ pub fn measure_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         (None, None) => quote! { concat!(module_path!(), "::", stringify!(#fn_ident)) },
     };
 
+    let cpu_alias_register = if label.is_some() {
+        let symbol_loc = match &impl_type {
+            Some(ty) => {
+                quote! { concat!(module_path!(), "::", #ty, "::", stringify!(#fn_ident)) }
+            }
+            None => quote! { concat!(module_path!(), "::", stringify!(#fn_ident)) },
+        };
+        quote! {
+            {
+                static __HOTPATH_CPU_ALIAS_ONCE: ::std::sync::Once = ::std::sync::Once::new();
+                __HOTPATH_CPU_ALIAS_ONCE.call_once(|| {
+                    hotpath::functions::register_cpu_label_alias(#measurement_loc, #symbol_loc);
+                });
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let wrapped_body = if !is_async_fn {
         if enable_result_logging {
             quote! {
@@ -557,6 +576,7 @@ pub fn measure_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let output = quote! {
         #(#attrs)*
         #vis #sig {
+            #cpu_alias_register
             #wrapped_body
         }
     };

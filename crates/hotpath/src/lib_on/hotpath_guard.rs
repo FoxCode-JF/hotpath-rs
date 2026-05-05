@@ -416,7 +416,7 @@ impl HotpathGuard {
                                     }
                                     #[cfg(feature = "hotpath-cpu")]
                                     FunctionsQuery::NamesAndIds(response_tx) => {
-                                        let map: std::collections::HashMap<&'static str, u32> =
+                                        let map: HashMap<&'static str, u32> =
                                             name_to_id
                                                 .iter()
                                                 .map(|(name, id)| (*name, *id))

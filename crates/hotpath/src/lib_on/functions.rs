@@ -1,5 +1,6 @@
 //! Function profiling module - measures execution time and memory allocations per function.
 
+use std::collections::HashMap;
 use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
@@ -323,6 +324,24 @@ pub(crate) static FUNCTIONS_STATE: OnceLock<Arc<RwLock<FunctionsState>>> = OnceL
 
 pub(crate) static FUNCTIONS_QUERY_TX: OnceLock<Sender<FunctionsQuery>> = OnceLock::new();
 
+static CPU_LABEL_ALIASES: OnceLock<RwLock<HashMap<&'static str, &'static str>>> = OnceLock::new();
+
+#[doc(hidden)]
+pub fn register_cpu_label_alias(label: &'static str, symbol: &'static str) {
+    let map = CPU_LABEL_ALIASES.get_or_init(|| RwLock::new(HashMap::new()));
+    if let Ok(mut w) = map.write() {
+        w.entry(label).or_insert(symbol);
+    }
+}
+
+#[cfg(feature = "hotpath-cpu")]
+pub(crate) fn get_cpu_label_aliases() -> HashMap<&'static str, &'static str> {
+    CPU_LABEL_ALIASES
+        .get()
+        .and_then(|m| m.read().ok().map(|g| g.clone()))
+        .unwrap_or_default()
+}
+
 /// Query request sent from TUI HTTP server to profiler worker thread
 #[derive(Debug)]
 pub(crate) enum FunctionsQuery {
@@ -332,7 +351,7 @@ pub(crate) enum FunctionsQuery {
     Alloc(Sender<Option<JsonFunctionsList>>),
     /// Request the names + worker-assigned ids of functions that have been registered
     #[cfg(feature = "hotpath-cpu")]
-    NamesAndIds(Sender<std::collections::HashMap<&'static str, u32>>),
+    NamesAndIds(Sender<HashMap<&'static str, u32>>),
     /// Request timing function logs for a specific function by ID
     LogsTiming {
         function_id: u32,
@@ -391,8 +410,7 @@ pub(crate) fn get_functions_alloc_json() -> Option<JsonFunctionsList> {
 
 #[cfg(feature = "hotpath-cpu")]
 #[cfg_attr(feature = "hotpath-meta", hotpath_meta::measure(log = true))]
-pub(crate) fn get_instrumented_names_and_ids(
-) -> Option<std::collections::HashMap<&'static str, u32>> {
+pub(crate) fn get_instrumented_names_and_ids() -> Option<HashMap<&'static str, u32>> {
     query_functions_state(FunctionsQuery::NamesAndIds)
 }
 
