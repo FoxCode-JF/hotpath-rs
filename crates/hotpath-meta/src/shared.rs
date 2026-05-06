@@ -208,8 +208,8 @@ impl IntoF64 for usize {
     }
 }
 
-#[cfg(all(feature = "hotpath-meta", feature = "hotpath-cpu-meta"))]
-pub(crate) fn env_flag(name: &str) -> bool {
+#[doc(hidden)]
+pub fn env_flag(name: &str) -> bool {
     std::env::var(name)
         .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
         .unwrap_or(false)

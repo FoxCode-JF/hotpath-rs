@@ -78,11 +78,8 @@ fn is_focused(name: &str) -> bool {
     }
 }
 
-pub(crate) static EXCLUDE_WRAPPER: LazyLock<bool> = LazyLock::new(|| {
-    std::env::var("HOTPATH_META_EXCLUDE_WRAPPER")
-        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-        .unwrap_or(false)
-});
+pub(crate) static EXCLUDE_WRAPPER: LazyLock<bool> =
+    LazyLock::new(|| crate::shared::env_flag("HOTPATH_META_EXCLUDE_WRAPPER"));
 
 #[doc(hidden)]
 pub fn build_measurement_guard_sync(
