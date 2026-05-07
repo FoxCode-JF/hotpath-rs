@@ -285,6 +285,7 @@ In the following sections, you’ll learn how to instrument the key parts of you
 
 - [Profiling modes](./profiling_modes.html) - static reports vs live TUI dashboard
 - [Functions](./functions.html) - measure execution time and memory allocations
+- [CPU profiling](./cpu_profiling.html) - attribute CPU samples to instrumented functions
 - [Async Data Flow](./data_flow.html) - monitor channels, streams, and futures
 - [Threads](./threads.html) - monitor threads usage
 - [Tokio Runtime](./tokio_runtime.html) - track Tokio runtime metrics

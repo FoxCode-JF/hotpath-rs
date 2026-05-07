@@ -101,6 +101,13 @@ const SEO_MAPPINGS: &[SeoConfig] = &[
         ],
     },
     SeoConfig {
+        path: "/cpu_profiling",
+        title: "Rust CPU Profiling with samply: Sampling-Based Performance Analysis | hotpath-rs",
+        description: "Profile CPU usage in Rust applications with hotpath-rs and samply. Combine sampling-based CPU profiling with instrumentation-based timing and allocation tracking to diagnose CPU, I/O, and memory bottlenecks.",
+        breadcrumb_label: "CPU Profiling",
+        faqs: &[],
+    },
+    SeoConfig {
         path: "/benchmarks",
         title: "Benchmark and Compare Rust Application Performance Across Versions | hotpath-rs",
         description: "Run deterministic benchmarks and compare results between git commits. Detect performance regressions with A/B comparison, CPU baseline normalization, and load-testing integration.",

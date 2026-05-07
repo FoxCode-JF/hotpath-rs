@@ -51,6 +51,10 @@
     "hash": "9f7ebcb0",
     "hashed_path": "images/samply-cpu.9f7ebcb0.png"
   },
+  "images/samply-report.png": {
+    "hash": "9e1c0600",
+    "hashed_path": "images/samply-report.9e1c0600.png"
+  },
   "images/stars-apache-horaedb.svg": {
     "hash": "86fd4b85",
     "hashed_path": "images/stars-apache-horaedb.86fd4b85.svg"
@@ -68,8 +72,8 @@
     "hashed_path": "images/stars-marc2332-freya.284a862e.svg"
   },
   "images/stars-pawurb-hotpath-rs.svg": {
-    "hash": "4b37e35a",
-    "hashed_path": "images/stars-pawurb-hotpath-rs.4b37e35a.svg"
+    "hash": "483025c3",
+    "hashed_path": "images/stars-pawurb-hotpath-rs.483025c3.svg"
   },
   "images/stars-tqwewe-kameo.svg": {
     "hash": "8be1b6bc",

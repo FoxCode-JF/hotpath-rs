@@ -62,10 +62,10 @@ impl OtherWorker {
 fn main() {
     let mut total: u64 = 0;
     for _ in 0..2000 {
-        total = total.wrapping_add(free_heavy_work(500_00));
-        total = total.wrapping_add(Worker::method_heavy_work(500_00));
-        total = total.wrapping_add(Worker::method_light_work(100_00));
-        total = total.wrapping_add(OtherWorker::method_heavy_work(500_00));
+        total = total.wrapping_add(free_heavy_work(50_000));
+        total = total.wrapping_add(Worker::method_heavy_work(50_000));
+        total = total.wrapping_add(Worker::method_light_work(10_000));
+        total = total.wrapping_add(OtherWorker::method_heavy_work(50_000));
     }
     black_box(total);
 }

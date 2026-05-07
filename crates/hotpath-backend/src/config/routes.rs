@@ -29,6 +29,11 @@ const DOC_PAGES: &[SitemapConfig] = &[
         changefreq: "weekly",
     },
     SitemapConfig {
+        page: "cpu_profiling",
+        priority: "0.8",
+        changefreq: "weekly",
+    },
+    SitemapConfig {
         page: "benchmarks",
         priority: "0.8",
         changefreq: "weekly",

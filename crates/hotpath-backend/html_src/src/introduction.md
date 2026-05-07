@@ -1,4 +1,4 @@
-# Rust Performance & Memory Profiler
+# Rust Performance, CPU & Memory Profiler
 
 <div class="hero-badges">
   <a href="https://github.com/pawurb/hotpath-rs" target="_blank"><img src="{{#asset-hash images/stars-pawurb-hotpath-rs.svg}}" alt="GitHub Stars"></a>
@@ -19,7 +19,7 @@
 
 [hotpath-rs](https://github.com/pawurb/hotpath-rs) is an easy-to-configure Rust performance profiler that shows exactly where your code spends time, burns CPU, and allocates. 
 
-It helps you distinguish between functions that are slow because they **wait** and those that are slow because they **use CPU**. Instrument functions, channels, futures, and streams to find bottlenecks and focus optimizations where they matter most. Quickly diagnose whether a bottleneck is I/O-bound or CPU-bound. Get actionable insights into time, memory, and async data flow with minimal setup.
+It helps you distinguish between functions that are slow because they wait and those that are slow because they use CPU. Instrument functions, channels, futures, and streams to find bottlenecks and focus optimizations where they matter most. Quickly diagnose whether a bottleneck is I/O-bound or CPU-bound. Get actionable insights into time, memory, and async data flow with minimal setup.
 
 <div style="clear: both;"></div>
 
@@ -71,6 +71,7 @@ or use the live TUI dashboard to monitor real-time performance and data flow met
 
 - **Zero-cost when disabled** - fully gated by a feature flag.
 - **Low-overhead** time/memory profiling for both sync and async code.
+- **CPU profiling** - powered by <a href="https://github.com/mstange/samply" target="_blank">samply</a>. Analyze CPU usage of instrumented functions or explore full flamegraphs.
 - **Live TUI dashboard** - live TUI dashboard for performance + async data-flow metrics. (built with <a href="https://ratatui.rs/" target="_blank">ratatui.rs</a>).
 - **Static reports for one-off programs** - alternatively print profiling summaries without running the TUI.
 - **Memory allocation tracking** - track bytes allocated and allocation counts per function.
@@ -215,6 +216,7 @@ Explore the docs for customization options and advanced profiling features.
 - [Sampling Comparison](./sampling_comparison.html) - when to use `hotpath` vs CPU sampling profilers
 - [Profiling modes](./profiling_modes.html) - static reports vs live TUI dashboard
 - [Functions](./functions.html) - measure execution time and memory allocations
+- [CPU profiling](./cpu_profiling.html) - attribute CPU samples to instrumented functions
 - [A/B Benchmarks](./benchmarks.html) - compare performance between app versions
 - [Async Data Flow](./data_flow.html) - monitor channels, streams, and futures
 - [Debug & Metrics](./debug.html) - track custom values with dbg!, val!, and gauge! macros
