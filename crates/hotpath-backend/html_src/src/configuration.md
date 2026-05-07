@@ -33,6 +33,13 @@
 | `HOTPATH_KEEP_INLINE` | Set to `true` or `1` to preserve user-provided `#[inline(...)]` attributes instead of rewriting measured functions to `#[inline(never)]` under `hotpath-cpu`. This env var is read during proc-macro expansion, so run `cargo clean` before rebuilding for changes to take effect. (default: `false`) |
 | `HOTPATH_FUNCTIONS_NAME_DEPTH` | Number of module segments to keep when displaying function names (including the function name itself). `1` = function name only, `2` = one module + function, `0` = unlimited (full path). When using the TUI, set this env var for the TUI process too, since the console applies name shortening in its own process. (default: `2`) |
 
+## CPU Sampling
+
+| Variable | Description |
+|----------|-------------|
+| `HOTPATH_SAMPLY_WRAPPER_BIN` | Path to the `hotpath-samply` wrapper binary that autospawn launches under the `hotpath-cpu` feature. (default: `hotpath-samply`, resolved via `PATH`) |
+| `HOTPATH_SAMPLY_BIN` | Path to the external `samply` binary used by the `hotpath-samply` worker. (default: `samply`, resolved via `PATH`) |
+
 ## Metrics Server
 
 | Variable | Description |
