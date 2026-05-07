@@ -93,6 +93,8 @@ filter_commits = false
 link_parsers = []
 # Include only the tags that belong to the current branch.
 use_branch_tags = false
+# Skip non-release tags (CI artifacts) from changelog while keeping them in git.
+ignore_tags = "^samply(-macos)?-release$"
 # Order releases topologically instead of chronologically.
 topo_order = false
 # Order releases topologically instead of chronologically.

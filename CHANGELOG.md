@@ -2,6 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0] - 2026-05-07
+
+### 🚀 Features
+
+- Group timing and memory functions tab
+
+- [**breaking**] Separate tabs and endpoints for dataflow
+
+Removes data_flow* json endpoints.
+
+
+- Display avg total poll time
+
+- Display PID in TUI status
+
+- Initial CPU profiling
+
+- Report cpu profiling errors
+
+- CPU error handling and samply load
+
+- Apply inline(never) to cpu measured functions
+
+- Disable samply load command
+
+- Abstract allocator in hotpath-alloc
+
+- Render feature unavailable reason
+
+
+### 🐛 Bug Fixes
+
+- Report missing samples error
+
+- Attribute cpu for labeled functions
+
+- Calculate CPU for short profiling
+
+- Feature-gated tests
+
+
+### 🚜 Refactor
+
+- [**breaking**] Remove ArcSwap for functions guard
+
+Dropping functions guard will no longer reset its state.
+
+
+- Improve deps versions and add CI
+
+- Separate IDs for each dataflow type
+
+- Reuse env helper
+
+
+### ⚡ Performance
+
+- Optional logging crates
+
+
+### ⚙️ Miscellaneous Tasks
+
+- Samply bin artifact CI
+
+- Samply macOS bin artifact CI
+
+- Add linux dev docs
+
+- CI linux cpu profiling
+
+- Add syncmeta skill
+
+- Add cpu sampling docs
+
+- Release 0.16.0
+
+
 ## [0.15.1] - 2026-04-27
 
 ### 🚀 Features
