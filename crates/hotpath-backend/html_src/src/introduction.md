@@ -2,8 +2,9 @@
 
 <div class="hero-badges">
   <a href="https://github.com/pawurb/hotpath-rs" target="_blank"><img src="{{#asset-hash images/stars-pawurb-hotpath-rs.svg}}" alt="GitHub Stars"></a>
-  <a href="https://crates.io/crates/hotpath" target="_blank"><img src="https://img.shields.io/crates/d/hotpath?cacheSeconds=86400" alt="crates.io downloads"></a>
   <a href="https://crates.io/crates/hotpath" target="_blank"><img src="https://img.shields.io/crates/v/hotpath.svg?cacheSeconds=86400" alt="crates.io version"></a>
+  <a href="https://crates.io/crates/hotpath" target="_blank"><img src="https://img.shields.io/crates/d/hotpath?cacheSeconds=86400" alt="crates.io downloads"></a>
+  <a href="/sponsorship"><img src="https://img.shields.io/badge/Sponsor-hotpath--rs-6f42c1" alt="Sponsor hotpath-rs"></a>
 </div>
 
 <div class="hero-row">

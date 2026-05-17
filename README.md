@@ -1,5 +1,5 @@
 # <img src="media/hotpath-logo2.png" alt="hotpath-rs logo" width="80px" align="left"> hotpath - Rust Performance, CPU & Memory Profiler
-[![Latest Version](https://img.shields.io/crates/v/hotpath.svg)](https://crates.io/crates/hotpath) [![Downloads](https://img.shields.io/crates/d/hotpath?cacheSeconds=86400)](https://crates.io/crates/hotpath) [![GH Actions](https://github.com/pawurb/hotpath/actions/workflows/ci.yml/badge.svg)](https://github.com/pawurb/hotpath/actions)
+[![GH Actions](https://github.com/pawurb/hotpath/actions/workflows/ci.yml/badge.svg)](https://github.com/pawurb/hotpath/actions) [![Latest Version](https://img.shields.io/crates/v/hotpath.svg)](https://crates.io/crates/hotpath) [![Downloads](https://img.shields.io/crates/d/hotpath?cacheSeconds=86400)](https://crates.io/crates/hotpath) [![Sponsor](https://img.shields.io/badge/Sponsor-hotpath--rs-6f42c1)](https://hotpath.rs/sponsorship)
 
 hotpath-rs is an easy-to-configure Rust performance profiler that shows exactly where your code spends time, burns CPU, and allocates memory. 
 

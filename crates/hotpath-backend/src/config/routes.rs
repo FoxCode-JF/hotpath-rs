@@ -78,6 +78,11 @@ const DOC_PAGES: &[SitemapConfig] = &[
         priority: "0.6",
         changefreq: "monthly",
     },
+    SitemapConfig {
+        page: "sponsorship",
+        priority: "0.5",
+        changefreq: "monthly",
+    },
 ];
 
 const BASE_URL: &str = "https://hotpath.rs";

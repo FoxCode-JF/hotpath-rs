@@ -193,6 +193,13 @@ const SEO_MAPPINGS: &[SeoConfig] = &[
         breadcrumb_label: "MCP Integration",
         faqs: &[],
     },
+    SeoConfig {
+        path: "/sponsorship",
+        title: "Sponsor hotpath-rs: Support Open-Source Rust Profiling | hotpath-rs",
+        description: "Sponsor hotpath-rs and reach Rust developers through logo placement in the README and documentation site. Limited sponsorship slots support continued work on the open-source Rust profiler.",
+        breadcrumb_label: "Sponsorship",
+        faqs: &[],
+    },
 ];
 
 const STATIC_EXTENSIONS: &[&str] = &[
