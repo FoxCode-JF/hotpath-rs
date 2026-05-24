@@ -68,6 +68,8 @@ or use the live TUI dashboard to monitor real-time performance and data flow met
   <source src="{{#asset-hash videos/hotpath-live-dashboard.mp4}}" type="video/mp4">
 </video>
 
+To learn more about the inner workings of the library, see this [blog post](https://pawelurbanek.com/rust-performance-profiling) or the [conference talk](https://www.youtube.com/watch?v=ir1WC_rO2Fk).
+
 ## Features
 
 - **Zero-cost when disabled** - fully gated by a feature flag.
