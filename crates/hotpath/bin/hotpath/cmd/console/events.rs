@@ -5,8 +5,8 @@ use hotpath::json::Route;
 use hotpath::json::{
     JsonChannelLogsList, JsonChannelsList, JsonDebugList, JsonDebugLog, JsonFunctionAllocLogsList,
     JsonFunctionTimingLogsList, JsonFunctionsCpuEnvelope, JsonFunctionsList, JsonFutureLogsList,
-    JsonFuturesList, JsonProfilerStatus, JsonRuntimeSnapshot, JsonStreamLogsList, JsonStreamsList,
-    JsonThreadsList,
+    JsonFuturesList, JsonProfilerStatus, JsonRuntimeSnapshot, JsonRwLocksList, JsonStreamLogsList,
+    JsonStreamsList, JsonThreadsList,
 };
 
 #[derive(Debug)]
@@ -18,6 +18,7 @@ pub(crate) enum DataRequest {
     RefreshChannels,
     RefreshStreams,
     RefreshFutures,
+    RefreshRwLocks,
     RefreshThreads,
     RefreshDebug,
     RefreshTokioRuntime,
@@ -42,6 +43,7 @@ impl DataRequest {
             DataRequest::RefreshChannels => Route::Channels,
             DataRequest::RefreshStreams => Route::Streams,
             DataRequest::RefreshFutures => Route::Futures,
+            DataRequest::RefreshRwLocks => Route::RwLocks,
             DataRequest::RefreshThreads => Route::Threads,
             DataRequest::RefreshDebug => Route::Debug,
             DataRequest::RefreshTokioRuntime => Route::TokioRuntime,
@@ -85,6 +87,7 @@ pub(crate) enum DataResponse {
     Channels(JsonChannelsList),
     Streams(JsonStreamsList),
     Futures(JsonFuturesList),
+    RwLocks(JsonRwLocksList),
     ChannelLogs {
         id: u32,
         logs: JsonChannelLogsList,

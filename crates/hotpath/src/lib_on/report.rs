@@ -253,6 +253,7 @@ pub(crate) fn collect_rw_locks_json(
 ) -> JsonRwLocksList {
     JsonRwLocksList {
         current_elapsed_ns: elapsed.as_nanos() as u64,
+        percentiles: percentiles.to_vec(),
         data: rw_locks
             .iter()
             .map(|rw_lock| rw_lock_to_json(rw_lock, percentiles))

@@ -1,9 +1,42 @@
 use futures_util::stream::{self, StreamExt};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 pub fn init() {
     spawn_tokio_demo();
+    spawn_rw_locks();
+}
+
+fn spawn_rw_locks() {
+    let lock = Arc::new(hotpath::rw_lock!(
+        std::sync::RwLock::new(0u64),
+        label = "demo-counter"
+    ));
+
+    // Writer: bumps the counter periodically, holding the write lock briefly.
+    let writer = Arc::clone(&lock);
+    thread::spawn(move || loop {
+        {
+            let mut w = writer.write().unwrap();
+            *w += 1;
+            thread::sleep(Duration::from_millis(5));
+        }
+        thread::sleep(Duration::from_millis(120));
+    });
+
+    // Readers: a few threads sampling the counter with varying hold times.
+    for delay_ms in [40u64, 70, 110] {
+        let reader = Arc::clone(&lock);
+        thread::spawn(move || loop {
+            {
+                let r = reader.read().unwrap();
+                std::hint::black_box(*r);
+                thread::sleep(Duration::from_millis(2));
+            }
+            thread::sleep(Duration::from_millis(delay_ms));
+        });
+    }
 }
 
 async fn sleep_ms(ms: u64) {

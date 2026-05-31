@@ -7,7 +7,7 @@ use hotpath::json::{
     DebugEntryType, JsonChannelLogsList, JsonChannelsList, JsonDebugList,
     JsonFunctionAllocLogsList, JsonFunctionEntry, JsonFunctionTimingLogsList,
     JsonFunctionsCpuEnvelope, JsonFunctionsList, JsonFutureLogsList, JsonFuturesList,
-    JsonStreamLogsList, JsonStreamsList, JsonThreadsList,
+    JsonRwLocksList, JsonStreamLogsList, JsonStreamsList, JsonThreadsList,
 };
 use std::time::Instant;
 
@@ -286,6 +286,19 @@ impl App {
         self.try_auto_expand_logs();
     }
 
+    pub(crate) fn update_rw_locks(&mut self, rw_locks: JsonRwLocksList) {
+        self.rw_locks = rw_locks;
+        self.last_successful_fetch = Some(Instant::now());
+        self.error_message = None;
+
+        let len = self.rw_locks.data.len();
+        if let Some(selected) = self.rw_locks_table_state.selected() {
+            if selected >= len && len > 0 {
+                self.rw_locks_table_state.select(Some(len - 1));
+            }
+        }
+    }
+
     pub(crate) fn request_data_flow_logs(&self) {
         if self.paused {
             return;
@@ -307,6 +320,7 @@ impl App {
                 .selected()
                 .and_then(|i| self.futures.data.get(i))
                 .map(|e| DataRequest::FetchFutureLogs(e.id)),
+            DataFlowSubTab::RwLocks => None,
         };
 
         if let Some(req) = request {
@@ -472,6 +486,7 @@ impl App {
                     DataFlowSubTab::Channels => DataRequest::RefreshChannels,
                     DataFlowSubTab::Streams => DataRequest::RefreshStreams,
                     DataFlowSubTab::Futures => DataRequest::RefreshFutures,
+                    DataFlowSubTab::RwLocks => DataRequest::RefreshRwLocks,
                 }
             }
             SelectedTab::Threads => {
@@ -564,6 +579,11 @@ impl App {
                 trace!("Received futures: {} entries", data.data.len());
                 self.loading_data_flow = false;
                 self.update_futures(data);
+            }
+            DataResponse::RwLocks(data) => {
+                trace!("Received rw_locks: {} entries", data.data.len());
+                self.loading_data_flow = false;
+                self.update_rw_locks(data);
             }
             DataResponse::ChannelLogs { id, logs } => {
                 trace!(

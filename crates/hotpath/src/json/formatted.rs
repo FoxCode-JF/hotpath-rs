@@ -315,6 +315,7 @@ pub struct JsonChannelEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRwLocksList {
     pub current_elapsed_ns: u64,
+    pub percentiles: Vec<f64>,
     pub data: Vec<JsonRwLockEntry>,
 }
 

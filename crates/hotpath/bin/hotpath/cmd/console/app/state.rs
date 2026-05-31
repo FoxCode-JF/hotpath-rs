@@ -333,6 +333,9 @@ impl App {
     }
 
     pub(crate) fn toggle_data_flow_logs(&mut self) {
+        if !self.data_flow_sub_tab.has_logs() {
+            return;
+        }
         let count = self.data_flow_entries_len();
         let has_valid_selection = self
             .data_flow_table_state()

@@ -137,6 +137,26 @@ pub(crate) struct RwLocksState {
 
 pub(crate) static RW_LOCKS_STATE: OnceLock<RwLocksState> = OnceLock::new();
 
+pub(crate) fn get_sorted_rw_lock_entries() -> Vec<RwLockEntry> {
+    let Some(state) = RW_LOCKS_STATE.get() else {
+        return Vec::new();
+    };
+    let guard = state.inner.read().unwrap();
+    let mut stats: Vec<RwLockEntry> = guard.stats.values().cloned().collect();
+    stats.sort_by(compare_rw_lock_entries);
+    stats
+}
+
+pub(crate) fn get_rw_locks_json() -> crate::json::JsonRwLocksList {
+    let entries = get_sorted_rw_lock_entries();
+    let elapsed = std::time::Duration::from_nanos(crate::lib_on::current_elapsed_ns());
+    crate::lib_on::report::collect_rw_locks_json(
+        &entries,
+        elapsed,
+        &crate::lib_on::hotpath_guard::configured_percentiles(),
+    )
+}
+
 #[inline]
 pub(crate) fn send_rw_lock_event(stats_tx: &CbSender<RwLockEvent>, event: RwLockEvent) {
     let _suspend = crate::lib_on::SuspendAllocTracking::new();

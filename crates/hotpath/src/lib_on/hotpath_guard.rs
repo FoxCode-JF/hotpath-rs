@@ -6,6 +6,16 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 use std::thread;
 
+pub(crate) static CONFIGURED_PERCENTILES: std::sync::OnceLock<Vec<f64>> =
+    std::sync::OnceLock::new();
+
+pub(crate) fn configured_percentiles() -> Vec<f64> {
+    CONFIGURED_PERCENTILES
+        .get()
+        .cloned()
+        .unwrap_or_else(|| vec![95.0])
+}
+
 pub(crate) const WORKER_SHUTDOWN_DRAIN_LIMIT: usize = 1_000;
 pub(crate) const WORKER_BATCH_SIZE: usize = 100;
 pub(crate) const WORKER_FLUSH_INTERVAL_MS: u64 = 50;
@@ -320,6 +330,7 @@ impl HotpathGuard {
         let _suspend = crate::lib_on::SuspendAllocTracking::new();
 
         let percentiles = percentiles.to_vec();
+        let _ = CONFIGURED_PERCENTILES.set(percentiles.clone());
 
         let arc_swap = FUNCTIONS_STATE.get_or_init(|| ArcSwapOption::from(None));
 
