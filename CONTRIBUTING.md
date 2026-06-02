@@ -154,6 +154,26 @@ cargo run -p test-channels-asc --example benchmark_channel_asc --features hotpat
 cargo run -p test-channels-flume --example benchmark_channel_flume --features hotpath --release
 ```
 
+#### Futures
+
+The `benchmark_future` example wraps a trivial ready future with the `future!` macro in a tight loop, so the measured time reflects per-future instrumentation overhead. The iteration count defaults to 1,000,000 and is configurable via `HOTPATH_FUTURE_BENCH_RUNS`.
+
+Run with `--features hotpath` to measure with instrumentation, and omit it to measure the uninstrumented baseline.
+
+```bash
+cargo run -p test-futures --example benchmark_future --features hotpath --release
+```
+
+#### Streams
+
+The `benchmark_stream` example wraps a long iterator stream with the `stream!` macro and drains it in a tight loop, so the measured time reflects per-item instrumentation overhead. The iteration count defaults to 1,000,000 and is configurable via `HOTPATH_STREAM_BENCH_RUNS`.
+
+Run with `--features hotpath` to measure with instrumentation, and omit it to measure the uninstrumented baseline.
+
+```bash
+cargo run -p test-streams --example benchmark_stream --features hotpath --release
+```
+
 ### Samply traces 
 
 Analyze [Samply](https://github.com/mstange/samply) traces by running the instrumented benchmarks:
