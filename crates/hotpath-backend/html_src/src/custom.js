@@ -10,13 +10,9 @@
     if (status === "joined") {
         const card = document.querySelector(".waitlist-card");
         if (card) {
-            const title = card.querySelector(".waitlist-card-title");
-            if (title) title.textContent = "🎉 You're on the waitlist!";
-            const row = card.querySelector(".waitlist-cta-row");
-            if (row) {
-                row.innerHTML =
-                    '<p class="waitlist-cta-note">Thanks for signing up - we\'ll email you when the dashboard launches.</p>';
-            }
+            card.innerHTML =
+                '<h2 class="waitlist-card-title">🎉 You\'re on the waitlist!</h2>' +
+                '<p>Thanks for signing up - we\'ll email you when the dashboard launches.</p>';
         }
         return;
     }
