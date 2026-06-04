@@ -114,7 +114,7 @@ pub fn app() -> Router {
     let mut router = Router::new()
         .route(
             "/",
-            get(|| async { serve_doc_page("introduction.html").await }),
+            get(|| async { serve_landing_page("introduction.html").await }),
         )
         .route("/introduction", get(|| async { Redirect::permanent("/") }))
         .route(
@@ -286,12 +286,30 @@ async fn serve_doc_page(filename: &str) -> Response<Body> {
     }
 }
 
+#[hotpath::measure]
+async fn serve_landing_page(filename: &str) -> Response<Body> {
+    let path = PathBuf::from("html").join(filename);
+    let (body, status) = match tokio::fs::read_to_string(&path).await {
+        Ok(content) => (content, StatusCode::OK),
+        Err(_) => ("Page not found".to_string(), StatusCode::NOT_FOUND),
+    };
+    html_response_with_cache(body, status, "no-cache, no-store, must-revalidate")
+}
+
 async fn serve_doc_page_owned(filename: String) -> Response<Body> {
     serve_doc_page(&filename).await
 }
 
 #[hotpath::measure]
 pub fn html_response(body: String, status: StatusCode) -> Response<Body> {
+    html_response_with_cache(body, status, "public, max-age=3600")
+}
+
+pub fn html_response_with_cache(
+    body: String,
+    status: StatusCode,
+    cache_control: &'static str,
+) -> Response<Body> {
     let mut headers = HeaderMap::new();
     headers.insert(
         "Content-Type",
@@ -299,7 +317,7 @@ pub fn html_response(body: String, status: StatusCode) -> Response<Body> {
     );
     headers.insert(
         header::CACHE_CONTROL,
-        HeaderValue::from_static("public, max-age=3600"),
+        HeaderValue::from_static(cache_control),
     );
     (status, headers, body).into_response()
 }

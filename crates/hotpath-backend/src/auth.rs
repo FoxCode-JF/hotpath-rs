@@ -1,7 +1,7 @@
 use axum::{
     Router,
     extract::{Query, State},
-    http::{HeaderMap, StatusCode, header::SET_COOKIE},
+    http::{HeaderMap, header::SET_COOKIE},
     response::{IntoResponse, Redirect},
     routing::get,
 };
@@ -115,7 +115,7 @@ async fn callback(
 
     if csrf_token != Some(&query.state) {
         tracing::error!("CSRF token mismatch");
-        return StatusCode::BAD_REQUEST.into_response();
+        return Redirect::to("/?waitlist=error").into_response();
     }
 
     let http_client = match reqwest::Client::builder()
@@ -125,7 +125,7 @@ async fn callback(
         Ok(client) => client,
         Err(e) => {
             tracing::error!("Failed to build HTTP client: {:?}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Redirect::to("/?waitlist=error").into_response();
         }
     };
 
@@ -139,7 +139,7 @@ async fn callback(
         Ok(token) => token,
         Err(e) => {
             tracing::error!("Failed to exchange code for token: {:?}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Redirect::to("/?waitlist=error").into_response();
         }
     };
 
@@ -149,7 +149,7 @@ async fn callback(
         Ok(user) => user,
         Err(e) => {
             tracing::error!("Failed to fetch GitHub user: {:?}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Redirect::to("/?waitlist=error").into_response();
         }
     };
 
@@ -178,7 +178,7 @@ async fn callback(
     let mut response_headers = HeaderMap::new();
     response_headers.append(SET_COOKIE, clear_csrf.to_string().parse().unwrap());
 
-    (response_headers, Redirect::to("/")).into_response()
+    (response_headers, Redirect::to("/?waitlist=joined")).into_response()
 }
 
 async fn fetch_github_user(access_token: &str) -> Result<GitHubUser, eyre::Error> {

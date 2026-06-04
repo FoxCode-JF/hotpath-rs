@@ -1,6 +1,6 @@
 # Terms
 
-If you choose to join the waitlist, we collect your GitHub login and email address to manage the Hotpath waitlist and notify you about the launch. We do not collect any data unless you decide to join.
+If you choose to join the waitlist, we collect your GitHub login and email address to manage the Hotpath waitlist and notify you about the launch. 
 
 You may request deletion of your data at any time by emailing contact@pawelurbanek.com.
 
