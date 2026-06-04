@@ -1,7 +1,10 @@
 use std::time::Instant;
 
 #[hotpath::measure]
-fn noop() {}
+fn noop() {
+    let a = 0;
+    std::hint::black_box(a);
+}
 
 #[hotpath::main]
 fn main() {
