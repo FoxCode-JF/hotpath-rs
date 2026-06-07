@@ -13,7 +13,7 @@ ssh demo.hotpath.rs
 
 ## Coming soon: Hotpath Team
 
-**Every Rust pull request gets a performance review.** See exactly what changed between commits and where to look next.
+**Every Rust pull request gets a performance review.** See exactly what changed between commits, based on reproducible signals - not CI noise.
 
 [<img src="media/join-waitlist-github.png" alt="Join waitlist with GitHub" width="240px">](https://hotpath.rs/auth/github/login)
 
