@@ -6,7 +6,7 @@ use crossbeam_channel::{select, Receiver};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Layout},
-    style::{Color, Style, Stylize},
+    style::{Color, Style},
     text::{Line, Span},
     Frame,
 };
