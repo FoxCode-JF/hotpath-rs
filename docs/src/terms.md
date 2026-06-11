@@ -4,7 +4,7 @@ If you choose to join the waitlist, we collect your GitHub login and email addre
 
 You may request deletion of your data at any time by emailing contact@pawelurbanek.com.
 
-We use [Simple Analytics](https://www.simpleanalytics.com/) for anonymized traffic monitoring. It does not use cookies and does not collect any personal data.
+We use <a href="https://www.simpleanalytics.com/" rel="nofollow">Simple Analytics</a> for anonymized traffic monitoring. It does not use cookies and does not collect any personal data.
 
 The controller of your data is:
 
