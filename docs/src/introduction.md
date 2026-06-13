@@ -23,7 +23,7 @@ It helps you distinguish between functions that are slow because they wait on I/
 <div style="clear: both;"></div>
 
 <div class="trusted-by">
-  <p class="trusted-by-tagline">Trusted by dozens of open-source projects, including:</p>
+  <p class="trusted-by-tagline">Used by dozens of open-source projects, including:</p>
   <div class="trusted-by-grid">
     <a href="https://github.com/apache/opendal" target="_blank" class="trusted-by-project">
       <span class="trusted-by-name">apache/opendal</span>
